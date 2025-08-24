@@ -15,7 +15,7 @@ from matplotlib.lines import Line2D
 QISKIT_AVAILABLE = True
 try:
     from qiskit import QuantumCircuit, transpile
-    from qiskit.quantum_info import Statevector, DensityMatrix
+    from qiskit.quantum_info import Statevector
     from qiskit_aer import Aer
     from qiskit.visualization import circuit_drawer, plot_histogram, plot_state_qsphere
 except Exception:
@@ -104,35 +104,26 @@ def fig_to_png_bytes(fig: Figure, dpi=800, *, bbox_inches="tight", pad_inches=0.
 # ================= Controles combinados (slider + número) =================
 def angle_input(label, key_base, min_val, max_val, *, step=0.1, unit="deg", default=0.0, disabled=False, help=None, fmt="%.2f"):
     """
-    Control combinado: slider + number_input sincronizados.
-    Devuelve el valor float actual.
-    Crea dos claves: f"{key_base}_slider" y f"{key_base}_input".
-
-    ✅ Evita el warning de Streamlit: usamos session_state como fuente de verdad
-    y NO pasamos 'value=' al widget cuando también hay 'key'.
+    Slider + number_input sincronizados vía session_state.
+    ✅ Evita warnings: no usamos 'value=' cuando hay 'key'.
     """
     slider_key = f"{key_base}_slider"
     input_key  = f"{key_base}_input"
 
-    # Estado inicial (solo una vez)
     st.session_state.setdefault(slider_key, float(default))
     st.session_state.setdefault(input_key,  float(default))
 
-    # Callbacks de sincronización
     def _sync_from_slider():
         st.session_state[input_key] = float(st.session_state[slider_key])
 
     def _sync_from_input():
         v = float(st.session_state[input_key])
-        # clamp
-        if v < float(min_val): v = float(min_val)
-        if v > float(max_val): v = float(max_val)
+        v = max(float(min_val), min(float(max_val), v))
         st.session_state[input_key]  = v
         st.session_state[slider_key] = v
 
     csl, cnum = st.columns([4, 1])
 
-    # ✅ SIN value= (usa session_state + key)
     csl.slider(
         f"{label} ({unit})",
         min_val, max_val,
@@ -143,7 +134,6 @@ def angle_input(label, key_base, min_val, max_val, *, step=0.1, unit="deg", defa
         help=help
     )
 
-    # ✅ SIN value= (usa session_state + key)
     cnum.number_input(
         " ",
         min_value=float(min_val),
@@ -161,12 +151,10 @@ def angle_input(label, key_base, min_val, max_val, *, step=0.1, unit="deg", defa
 DEFAULT_CAMERA = dict(eye=dict(x=1.6, y=1.6, z=1.1))
 
 def bloch_plotly(states, colors, labels, title, camera_key, height=640):
-    # Recupera/establece cámara
     cam = st.session_state.get(camera_key, DEFAULT_CAMERA)
-
     fig = go.Figure()
 
-    # Superficie de la esfera (transparente azul)
+    # Superficie
     u, v = np.mgrid[0:2*np.pi:120j, 0:np.pi:120j]
     xs, ys, zs = np.cos(u)*np.sin(v), np.sin(u)*np.sin(v), np.cos(v)
     fig.add_trace(go.Surface(
@@ -177,39 +165,35 @@ def bloch_plotly(states, colors, labels, title, camera_key, height=640):
         hoverinfo='skip'
     ))
 
-    # Ejes con ticks numéricos
+    # Ejes
     L = 1.1
     axes = {
-        'x': ([ -L,  L], [ 0, 0], [ 0, 0]),
-        'y': ([ 0, 0], [ -L,  L], [ 0, 0]),
-        'z': ([ 0, 0], [ 0, 0], [ -L,  L])
+        'x': ([-L, L], [0, 0], [0, 0]),
+        'y': ([0, 0], [-L, L], [0, 0]),
+        'z': ([0, 0], [0, 0], [-L, L])
     }
     for x,y,z in axes.values():
         fig.add_trace(go.Scatter3d(x=x, y=y, z=z, mode="lines",
                                    line=dict(color="black", width=4),
                                    hoverinfo='skip', showlegend=False))
 
-    # Marcas numéricas
+    # Marcas
     for t in [-1.0, -0.5, 0.5, 1.0]:
-        fig.add_trace(go.Scatter3d(x=[t], y=[0], z=[0], mode='text',
-                                   text=[f'{t:.1f}'], showlegend=False,
-                                   textfont=dict(color="gray", size=12), hoverinfo='skip'))
-        fig.add_trace(go.Scatter3d(x=[0], y=[t], z=[0], mode='text',
-                                   text=[f'{t:.1f}'], showlegend=False,
-                                   textfont=dict(color="gray", size=12), hoverinfo='skip'))
-        fig.add_trace(go.Scatter3d(x=[0], y=[0], z=[t], mode='text',
-                                   text=[f'{t:.1f}'], showlegend=False,
-                                   textfont=dict(color="gray", size=12), hoverinfo='skip'))
+        for x,y,z in ([t,0,0],[0,t,0],[0,0,t]):
+            fig.add_trace(go.Scatter3d(x=[x], y=[y], z=[z], mode='text',
+                                       text=[f'{[x,y,z][0 if x else (1 if y else 2)]:.1f}'],
+                                       showlegend=False, textfont=dict(color="gray", size=12),
+                                       hoverinfo='skip'))
 
-    # Etiquetas de estados base
+    # Etiquetas base
     lbl = 1.2
     labels_text = [
         (0,0, lbl,  r"$|0\rangle$"),
         (0,0,-lbl,  r"$|1\rangle$"),
-        ( lbl,0,0,  r"$|+\rangle$"),   # X+
-        (-lbl,0,0,  r"$|-\rangle$"),   # X-
-        (0,  lbl,0, r"$|+i\rangle$"),  # Y+
-        (0, -lbl,0, r"$|-i\rangle$")   # Y-
+        ( lbl,0,0,  r"$|+\rangle$"),
+        (-lbl,0,0,  r"$|-\rangle$"),
+        (0,  lbl,0, r"$|+i\rangle$"),
+        (0, -lbl,0, r"$|-i\rangle$")
     ]
     for x,y,z,t in labels_text:
         fig.add_trace(go.Scatter3d(x=[x], y=[y], z=[z], mode='text',
@@ -388,7 +372,7 @@ def qc_qft(n=3, swaps=True, measure=True):
 def qc_deutsch_jozsa(n=3, kind="balanced"):
     oracle = QuantumCircuit(n+1)
     if kind=="balanced":
-        b = 1  # fijo y reproducible
+        b = 1
         s = format(b, f"0{n}b")
         for i,c in enumerate(s):
             if c=="1": oracle.x(i)
@@ -412,9 +396,8 @@ def qc_bernstein_vazirani(s="1011"):
     return qc
 
 def _mcx(qc, ctrls, tgt):
-    """MCX sin ancillas (modo por defecto de Qiskit actual)."""
     try:
-        qc.mcx(ctrls, tgt)  # Qiskit moderno
+        qc.mcx(ctrls, tgt)
     except Exception:
         raise RuntimeError("Tu versión de Qiskit no soporta 'mcx'. Actualiza qiskit a 0.45+ o usa menos controles.")
 
@@ -425,7 +408,6 @@ def qc_grover(n=3, marked=None):
 
     qc = QuantumCircuit(n, n); qc.h(range(n))
 
-    # Oráculo: marca el bitstring 'marked'
     oracle = QuantumCircuit(n, name="Oracle")
     for i,c in enumerate(reversed(marked)):
         if c=="0": oracle.x(i)
@@ -433,7 +415,6 @@ def qc_grover(n=3, marked=None):
     for i,c in enumerate(reversed(marked)):
         if c=="0": oracle.x(i)
 
-    # Difusor
     diffuser = QuantumCircuit(n, name="Diffuser")
     diffuser.h(range(n)); diffuser.x(range(n))
     diffuser.h(n-1); _mcx(diffuser, list(range(n-1)), n-1); diffuser.h(n-1)
@@ -443,7 +424,7 @@ def qc_grover(n=3, marked=None):
     for _ in range(iters):
         qc.append(oracle.to_gate(), range(n))
         qc.append(diffuser.to_gate(), range(n))
-    qc.measure(range(n), range(n))
+    qc.measure_all()
     return qc
 
 def qc_shor_demo_15(a=2):
@@ -461,7 +442,10 @@ def qc_shor_demo_15(a=2):
     for q in range(n_count): qc.h(q)
     qc.x(n_count+3)
     for q in range(n_count):
-        qc.append(c_amod15(a, 2**q), [q] + list(range(n_count, n_count+4)))
+        qc.append(
+            c_amod15(a, 2**q),
+            [q] + list(range(n_count, n_count+4))
+        )
     # QFT^-1
     for j in range(n_count//2): qc.swap(j, n_count-1-j)
     for j in range(n_count):
@@ -528,6 +512,7 @@ with tab1:
             hspace=0.03, wspace=0.04
         )
         st.pyplot(fig_exp, use_container_width=True)
+        plt.close(fig_exp)  # 🔒 evita fugas de memoria
         st.download_button("⬇️ Descargar (PNG, 800 dpi)",
                            data=fig_to_png_bytes(fig_exp, 800),
                            file_name="bloch_estado.png",
@@ -605,6 +590,7 @@ with tab2:
             hspace=0.04, wspace=0.05
         )
         st.pyplot(fig2_exp, use_container_width=True)
+        plt.close(fig2_exp)
         st.download_button("⬇️ Descargar (PNG, 800 dpi)",
                            data=fig_to_png_bytes(fig2_exp, 800,pad_inches=0.02),
                            file_name="bloch_in_out.png",
@@ -694,14 +680,14 @@ with tab3:
 
                 st.session_state.t3_qc = qc
 
-                # Simulación
+                # Simulación (statevector)
                 sim = Aer.get_backend("aer_simulator")
-                qcsv = qc.copy()
-                qcsv.remove_final_measurements()
+                qcsv = qc.remove_final_measurements(inplace=False)
                 qcsv.save_statevector()
                 sv = sim.run(transpile(qcsv, sim)).result().get_statevector()
                 st.session_state.t3_sv = sv
 
+                # Medidas
                 counts = None
                 if qc.num_clbits > 0:
                     qasm = Aer.get_backend("qasm_simulator")
@@ -721,6 +707,7 @@ with tab3:
                         figC = circuit_drawer(st.session_state.t3_qc, output="mpl", style={'name':'mpl'})
                         figC.set_size_inches(9, 3.2)
                         st.pyplot(figC, use_container_width=True)
+                        plt.close(figC)
                         st.download_button("⬇️ Diagrama (PNG 800 dpi)",
                                            data=fig_to_png_bytes(figC, 800,pad_inches=0.02),
                                            file_name="circuito.png",
@@ -737,6 +724,7 @@ with tab3:
                     figH = plot_histogram(st.session_state.t3_counts)
                     figH.set_size_inches(8.0, 3.0)
                     st.pyplot(figH, use_container_width=True)
+                    plt.close(figH)
                     st.download_button("⬇️ Histograma (PNG 800 dpi)",
                                        data=fig_to_png_bytes(figH, 800,pad_inches=0.02),
                                        file_name="histograma.png",
@@ -751,6 +739,7 @@ with tab3:
                     figQ = plot_state_qsphere(Statevector(st.session_state.t3_sv))
                     figQ.set_size_inches(6.0, 6.0)
                     st.pyplot(figQ, use_container_width=False)
+                    plt.close(figQ)
                     st.download_button("⬇️ Q-sphere (PNG 800 dpi)",
                                        data=fig_to_png_bytes(figQ, 800,pad_inches=0.02),
                                        file_name="qsphere.png",
@@ -785,15 +774,16 @@ qc.h(0); qc.cx(0,1); qc.cx(0,2); qc.measure(range(3),range(3))
                 qc = ns.get("qc", None)
                 if qc is None:
                     st.warning("Tu código no definió `qc`."); st.stop()
+
                 # Diagrama
                 figC = circuit_drawer(qc, output="mpl", style={'name':'mpl'})
                 figC.set_size_inches(9, 3.2)
                 st.pyplot(figC, use_container_width=True)
+                plt.close(figC)
 
                 # Simulación
                 sim = Aer.get_backend("aer_simulator")
-                qcsv = qc.copy()
-                qcsv.remove_final_measurements()
+                qcsv = qc.remove_final_measurements(inplace=False)
                 qcsv.save_statevector()
                 sv = sim.run(transpile(qcsv, sim)).result().get_statevector()
                 st.markdown("**Vector de estado (sin medidas)**")
@@ -805,5 +795,6 @@ qc.h(0); qc.cx(0,1); qc.cx(0,2); qc.measure(range(3),range(3))
                     figH = plot_histogram(counts)
                     figH.set_size_inches(8.0, 3.0)
                     st.pyplot(figH, use_container_width=True)
+                    plt.close(figH)
             except Exception as e:
                 st.error(f"Error al ejecutar tu código: {e}")
