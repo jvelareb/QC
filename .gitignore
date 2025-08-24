@@ -1,22 +1,20 @@
-# Archivos de Python
+# Python
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
+*.py[cod]
+*.egg-info/
 
-# Entornos virtuales
-.venv/
-venv/
-ENV/
-env/
-
-# Configuración local
-.env
-.python-version
-
-# Configuraciones secretas de Streamlit
+# Streamlit
 .streamlit/secrets.toml
 
-# Archivos temporales
+# OS
 .DS_Store
 Thumbs.db
+
+# Venv
+.venv/
+venv/
+env/
+
+# Cache
+.cache/
+

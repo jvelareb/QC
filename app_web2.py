@@ -11,6 +11,21 @@ from matplotlib.figure import Figure
 import plotly.graph_objects as go
 from matplotlib.lines import Line2D
 
+import contextlib
+
+def show_exception(where: str, e: Exception):
+    st.error(f"❌ Error en {where}:")
+    st.exception(e)
+
+@contextlib.contextmanager
+def safe_section(where: str):
+    try:
+        yield
+    except Exception as e:
+        show_exception(where, e)
+
+st.set_option("client.showErrorDetails", True)
+
 # ----- Qiskit opcional (pestañas 3 y 4) -----
 QISKIT_AVAILABLE = True
 try:
@@ -463,338 +478,357 @@ tab1, tab2, tab3, tab4 = st.tabs([
     "4. Código Qiskit"
 ])
 
-# ---------------- Pestaña 1 ----------------
-with tab1:
-    st.subheader("Esfera de Bloch interactiva y proyecciones")
-    left, right = st.columns([0.65, 1.35], gap="small")
+# ========================= PESTAÑAS (con airbags) =========================
+try:
+    tab1, tab2, tab3, tab4 = st.tabs([
+        "1. Estado 1-Qubit",
+        "2. Puertas 1-Qubit",
+        "3. Circuitos (Dashboard)",
+        "4. Código Qiskit"
+    ])
 
-    with left:
-        method1 = st.radio("Método de entrada", ["Ángulos (θ, φ)", "Amplitudes (α, β)", "Presets"],
-                           key="t1_method", horizontal=True)
-        if method1 == "Ángulos (θ, φ)":
-            th1 = angle_input("θ", "t1_theta", 0.0, 180.0, step=0.1, unit="deg", default=0.0)
-            ph1 = angle_input("φ", "t1_phi",   0.0, 360.0, step=0.1, unit="deg", default=0.0)
-            psi1 = ket_from_angles(th1, ph1)
-        elif method1 == "Amplitudes (α, β)":
-            a_re = st.number_input("α (real)", value=1.0, key="t1_are")
-            a_im = st.number_input("α (imag)", value=0.0, key="t1_aim")
-            b_re = st.number_input("β (real)", value=0.0, key="t1_bre")
-            b_im = st.number_input("β (imag)", value=0.0, key="t1_bim")
-            psi1 = ket_from_amplitudes(a_re + 1j*a_im, b_re + 1j*b_im)
-        else:
-            preset = st.selectbox("Preset", ["|0⟩","|1⟩","|+⟩","|−⟩","|+i⟩","|−i⟩"], key="t1_preset")
-            mp = {"|0⟩":(1,0),"|1⟩":(0,1),"|+⟩":(1/np.sqrt(2),1/np.sqrt(2)),
-                  "|−⟩":(1/np.sqrt(2),-1/np.sqrt(2)),"|+i⟩":(1/np.sqrt(2),1j/np.sqrt(2)),
-                  "|−i⟩":(1/np.sqrt(2),-1j/np.sqrt(2))}
-            alpha, beta = mp[preset]
-            psi1 = ket_from_amplitudes(alpha, beta)
+    # ---------------- Pestaña 1 ----------------
+    with safe_section("Pestaña 1 (Bloch 1Q)"):
+        with tab1:
+            st.subheader("Esfera de Bloch interactiva y proyecciones")
+            left, right = st.columns([0.65, 1.35], gap="small")
 
-        x,y,z = bloch_xyz(psi1)
-        th, ph = angles_from_xyz(x,y,z)
-        p0, p1 = abs(psi1[0,0])**2*100, abs(psi1[1,0])**2*100
-
-        if st.button("🔄 Reset vista 3D", key="t1_reset"):
-            st.session_state["t1_cam"] = DEFAULT_CAMERA
-        fig_int = bloch_plotly([psi1], ['#d62728'], ['|ψ⟩'],
-                               title="Esfera de Bloch (interactiva)",
-                               camera_key="t1_cam", height=760)
-        st.plotly_chart(fig_int, use_container_width=True, key="t1_plotly")
-
-        st.caption(f"Ángulos: θ={th:.2f}°, φ={ph:.2f}°  |  Coords: x={x:.3f}, y={y:.3f}, z={z:.3f}  |  P(0)={p0:.1f}%, P(1)={p1:.1f}%")
-
-    with right:
-        fig_exp = draw_bloch_export(
-            [psi1], ['#d62728'], ['|ψ⟩'],
-            title="Esfera de Bloch y proyecciones",
-            figsize=(15.0, 10.0),
-            sphere_ratio=10.0,
-            proj_ratio=2.0,
-            hspace=0.03, wspace=0.04
-        )
-        st.pyplot(fig_exp, use_container_width=True)
-        plt.close(fig_exp)  # 🔒 evita fugas de memoria
-        st.download_button("⬇️ Descargar (PNG, 800 dpi)",
-                           data=fig_to_png_bytes(fig_exp, 800),
-                           file_name="bloch_estado.png",
-                           mime="image/png",
-                           key="t1_dl")
-
-# ---------------- Pestaña 2 ----------------
-with tab2:
-    st.subheader("Puertas 1-Qubit: |ψ_in⟩ → |ψ_out⟩")
-    top1, top2 = st.columns([1,1], gap="large")
-
-    with top1:
-        st.markdown("**Estado inicial**")
-        method2 = st.radio("Método", ["Ángulos (θ, φ)", "Amplitudes (α, β)", "Presets"], key="t2_method", horizontal=True)
-        if method2 == "Ángulos (θ, φ)":
-            th2 = angle_input("θ_in", "t2_theta", 0.0, 180.0, step=0.1, unit="deg", default=0.0)
-            ph2 = angle_input("φ_in", "t2_phi",   0.0, 360.0, step=0.1, unit="deg", default=0.0)
-            psi_in = ket_from_angles(th2, ph2)
-        elif method2 == "Amplitudes (α, β)":
-            a_re2 = st.number_input("α (real)", value=1.0, key="t2_are")
-            a_im2 = st.number_input("α (imag)", value=0.0, key="t2_aim")
-            b_re2 = st.number_input("β (real)", value=0.0, key="t2_bre")
-            b_im2 = st.number_input("β (imag)", value=0.0, key="t2_bim")
-            psi_in = ket_from_amplitudes(a_re2 + 1j*a_im2, b_re2 + 1j*b_im2)
-        else:
-            preset2 = st.selectbox("Preset", ["|0⟩","|1⟩","|+⟩","|−⟩","|+i⟩","|−i⟩"], key="t2_preset")
-            mp = {"|0⟩":(1,0),"|1⟩":(0,1),"|+⟩":(1/np.sqrt(2),1/np.sqrt(2)),
-                  "|−⟩":(1/np.sqrt(2),-1/np.sqrt(2)),"|+i⟩":(1/np.sqrt(2),1j/np.sqrt(2)),
-                  "|−i⟩":(1/np.sqrt(2),-1j/np.sqrt(2))}
-            alpha, beta = mp[preset2]
-            psi_in = ket_from_amplitudes(alpha, beta)
-
-    with top2:
-        st.markdown("**Puerta**")
-        gname = st.selectbox("Tipo", ["I","X","Y","Z","H","S","S†","T","T†","Rx","Ry","Rz","U(θ,φ,λ)"], key="t2_gate")
-
-        if gname == "Rx":
-            theta_rx = st.number_input("θ Rx (rad)", value=float(np.pi/2), key="t2_rx", step=0.01, format="%.3f")
-            U = U_gate("RX", theta_rx); gate_desc = f"Rx({theta_rx:.3f} rad)"
-        elif gname == "Ry":
-            theta_ry = st.number_input("θ Ry (rad)", value=float(np.pi/2), key="t2_ry", step=0.01, format="%.3f")
-            U = U_gate("RY", theta_ry); gate_desc = f"Ry({theta_ry:.3f} rad)"
-        elif gname == "Rz":
-            theta_rz = st.number_input("θ Rz (rad)", value=float(np.pi/2), key="t2_rz", step=0.01, format="%.3f")
-            U = U_gate("RZ", theta_rz); gate_desc = f"Rz({theta_rz:.3f} rad)"
-        elif gname == "U(θ,φ,λ)":
-            t_u = angle_input("θ U", "t2_U_theta", -360.0, 360.0, step=0.1, unit="deg", default=90.0)
-            p_u = angle_input("φ U", "t2_U_phi",   -360.0, 360.0, step=0.1, unit="deg", default=0.0)
-            l_u = angle_input("λ U", "t2_U_lam",   -360.0, 360.0, step=0.1, unit="deg", default=0.0)
-            U = U_gate("U", (np.deg2rad(t_u), np.deg2rad(p_u), np.deg2rad(l_u)))
-            gate_desc = f"U(θ={t_u:.1f}°, φ={p_u:.1f}°, λ={l_u:.1f}°)"
-        else:
-            U = U_gate(gname); gate_desc = gname
-
-    psi_out = U @ psi_in
-
-    left, right = st.columns([0.7, 1.3], gap="small")
-
-    with left:
-        if st.button("🔄 Reset vista 3D", key="t2_reset"):
-            st.session_state["t2_cam"] = DEFAULT_CAMERA
-        fig2_int = bloch_plotly([psi_in, psi_out], ['#1f77b4','#d62728'],
-                                ['|ψ_in⟩','|ψ_out⟩'],
-                                title=f"Esfera de Bloch — {gate_desc}",
-                                camera_key="t2_cam", height=780)
-        st.plotly_chart(fig2_int, use_container_width=True, key="t2_plotly")
-
-    with right:
-        fig2_exp = draw_bloch_export(
-            [psi_in, psi_out], ['#1f77b4','#d62728'], ['|ψ_in⟩','|ψ_out⟩'],
-            title=f"Esfera de Bloch — {gate_desc}",
-            figsize=(14.0, 9.6),
-            sphere_ratio=9.0,
-            proj_ratio=2.0,
-            hspace=0.04, wspace=0.05
-        )
-        st.pyplot(fig2_exp, use_container_width=True)
-        plt.close(fig2_exp)
-        st.download_button("⬇️ Descargar (PNG, 800 dpi)",
-                           data=fig_to_png_bytes(fig2_exp, 800,pad_inches=0.02),
-                           file_name="bloch_in_out.png",
-                           mime="image/png",
-                           key="t2_dl")
-
-    xin,yin,zin = bloch_xyz(psi_in)
-    xout,yout,zout = bloch_xyz(psi_out)
-    th_in, ph_in   = angles_from_xyz(xin,yin,zin)
-    th_out, ph_out = angles_from_xyz(xout,yout,zout)
-    p0, p1 = abs(psi_out[0,0])**2*100, abs(psi_out[1,0])**2*100
-
-    st.markdown("#### Resultado matemático")
-    st.code(
-        f"U = [[{pretty_c(U[0,0])}, {pretty_c(U[0,1])}],\n"
-        f"     [{pretty_c(U[1,0])}, {pretty_c(U[1,1])}]]\n\n"
-        f"|ψ_in⟩ = [{pretty_c(psi_in[0,0])}, {pretty_c(psi_in[1,0])}]^T\n"
-        f"|ψ_out⟩ = U · |ψ_in⟩ = [{pretty_c(psi_out[0,0])}, {pretty_c(psi_out[1,0])}]^T",
-        language="text"
-    )
-    st.caption(f"Ángulos entrada (θ={th_in:.2f}°, φ={ph_in:.2f}°) → salida (θ={th_out:.2f}°, φ={ph_out:.2f}°).  Probabilidades: P(0)={p0:.2f}%, P(1)={p1:.2f}%.")
-
-# ---------------- Pestaña 3: Dashboard ----------------
-with tab3:
-    st.subheader("Circuitos predeterminados — Dashboard")
-    if not QISKIT_AVAILABLE:
-        st.error("Qiskit / qiskit_aer no están instalados.")
-    else:
-        left, right = st.columns([1,2], gap="large")
-
-        with left:
-            algo = st.selectbox("Algoritmo", [
-                "Bell","GHZ","QFT","Deutsch-Jozsa","Bernstein-Vazirani","Grover","Shor (demo N=15)"
-            ], key="t3_algo")
-
-            with st.form("t3_param_form", clear_on_submit=False):
-                if algo == "Bell":
-                    measure = st.checkbox("Añadir medición", True, key="t3_bell_m")
-                elif algo == "GHZ":
-                    n = st.number_input("n (qubits ≥2)", min_value=2, value=3, step=1, key="t3_ghz_n")
-                    measure = st.checkbox("Añadir medición", True, key="t3_ghz_m")
-                elif algo == "QFT":
-                    n = st.number_input("n (qubits ≥1)", min_value=1, value=3, step=1, key="t3_qft_n")
-                    swaps = st.checkbox("SWAPs finales", True, key="t3_qft_s")
-                    measure = st.checkbox("Añadir medición", True, key="t3_qft_m")
-                elif algo == "Deutsch-Jozsa":
-                    n = st.number_input("n (entrada ≥1)", min_value=1, value=3, step=1, key="t3_dj_n")
-                    kind = st.selectbox("Oráculo", ["balanced","constant1"], key="t3_dj_kind")
-                elif algo == "Bernstein-Vazirani":
-                    s = st.text_input("Secreto s (binario)", "1011", key="t3_bv_s")
-                elif algo == "Grover":
-                    n = st.number_input("n (qubits ≥2)", min_value=2, value=3, step=1, key="t3_grover_n")
-                    marked = st.text_input("Marcado (binario longitud n)", "111", key="t3_grover_marked")
-                elif algo == "Shor (demo N=15)":
-                    a = st.selectbox("a (coprimo con 15)", [2,7,8,11,13], key="t3_shor_a")
-
-                shots = st.slider("Shots", 100, 8192, 1024, step=100, key="t3_shots")
-                submitted = st.form_submit_button("Generar y simular", use_container_width=True)
-
-        if "t3_qc" not in st.session_state:
-            st.session_state.t3_qc = None
-        if "t3_counts" not in st.session_state:
-            st.session_state.t3_counts = None
-        if "t3_sv" not in st.session_state:
-            st.session_state.t3_sv = None
-
-        if submitted:
-            try:
-                if algo == "Bell":
-                    qc = qc_bell(measure)
-                elif algo == "GHZ":
-                    qc = qc_ghz(int(n), measure)
-                elif algo == "QFT":
-                    qc = qc_qft(int(n), swaps, measure)
-                elif algo == "Deutsch-Jozsa":
-                    qc = qc_deutsch_jozsa(int(n), kind)
-                elif algo == "Bernstein-Vazirani":
-                    if not all(c in "01" for c in s):
-                        st.warning("El secreto s debe ser binario."); st.stop()
-                    qc = qc_bernstein_vazirani(s)
-                elif algo == "Grover":
-                    if len(marked) != int(n) or not all(c in "01" for c in marked):
-                        st.warning("Marcado debe ser binario de longitud n."); st.stop()
-                    qc = qc_grover(int(n), marked)
-                elif algo == "Shor (demo N=15)":
-                    qc = qc_shor_demo_15(int(a))
-
-                st.session_state.t3_qc = qc
-
-                # Simulación (statevector)
-                sim = Aer.get_backend("aer_simulator")
-                qcsv = qc.remove_final_measurements(inplace=False)
-                qcsv.save_statevector()
-                sv = sim.run(transpile(qcsv, sim)).result().get_statevector()
-                st.session_state.t3_sv = sv
-
-                # Medidas
-                counts = None
-                if qc.num_clbits > 0:
-                    qasm = Aer.get_backend("qasm_simulator")
-                    counts = qasm.run(transpile(qc, qasm), shots=shots).result().get_counts()
-                st.session_state.t3_counts = counts
-
-            except Exception as e:
-                st.error(f"Error al generar/simular: {e}")
-
-        with right:
-            dtabs = st.tabs(["Diagrama", "Medidas", "Q-sphere", "Statevector"])
-
-            # Diagrama
-            with dtabs[0]:
-                if st.session_state.t3_qc is not None:
-                    try:
-                        figC = circuit_drawer(st.session_state.t3_qc, output="mpl", style={'name':'mpl'})
-                        figC.set_size_inches(9, 3.2)
-                        st.pyplot(figC, use_container_width=True)
-                        plt.close(figC)
-                        st.download_button("⬇️ Diagrama (PNG 800 dpi)",
-                                           data=fig_to_png_bytes(figC, 800,pad_inches=0.02),
-                                           file_name="circuito.png",
-                                           mime="image/png",
-                                           key="t3_dl_circ")
-                    except Exception as e:
-                        st.error(f"No se pudo dibujar el circuito: {e}")
+            with left:
+                method1 = st.radio("Método de entrada", ["Ángulos (θ, φ)", "Amplitudes (α, β)", "Presets"],
+                                   key="t1_method", horizontal=True)
+                if method1 == "Ángulos (θ, φ)":
+                    th1 = angle_input("θ", "t1_theta", 0.0, 180.0, step=0.1, unit="deg", default=0.0)
+                    ph1 = angle_input("φ", "t1_phi",   0.0, 360.0, step=0.1, unit="deg", default=0.0)
+                    psi1 = ket_from_angles(th1, ph1)
+                elif method1 == "Amplitudes (α, β)":
+                    a_re = st.number_input("α (real)", value=1.0, key="t1_are")
+                    a_im = st.number_input("α (imag)", value=0.0, key="t1_aim")
+                    b_re = st.number_input("β (real)", value=0.0, key="t1_bre")
+                    b_im = st.number_input("β (imag)", value=0.0, key="t1_bim")
+                    psi1 = ket_from_amplitudes(a_re + 1j*a_im, b_re + 1j*b_im)
                 else:
-                    st.info("Genera el circuito a la izquierda.")
+                    preset = st.selectbox("Preset", ["|0⟩","|1⟩","|+⟩","|−⟩","|+i⟩","|−i⟩"], key="t1_preset")
+                    mp = {"|0⟩":(1,0),"|1⟩":(0,1),"|+⟩":(1/np.sqrt(2),1/np.sqrt(2)),
+                          "|−⟩":(1/np.sqrt(2),-1/np.sqrt(2)),"|+i⟩":(1/np.sqrt(2),1j/np.sqrt(2)),
+                          "|−i⟩":(1/np.sqrt(2),-1j/np.sqrt(2))}
+                    alpha, beta = mp[preset]
+                    psi1 = ket_from_amplitudes(alpha, beta)
 
-            # Medidas
-            with dtabs[1]:
-                if st.session_state.t3_counts is not None:
-                    figH = plot_histogram(st.session_state.t3_counts)
-                    figH.set_size_inches(8.0, 3.0)
-                    st.pyplot(figH, use_container_width=True)
-                    plt.close(figH)
-                    st.download_button("⬇️ Histograma (PNG 800 dpi)",
-                                       data=fig_to_png_bytes(figH, 800,pad_inches=0.02),
-                                       file_name="histograma.png",
-                                       mime="image/png",
-                                       key="t3_dl_hist")
+                x,y,z = bloch_xyz(psi1)
+                th, ph = angles_from_xyz(x,y,z)
+                p0, p1 = abs(psi1[0,0])**2*100, abs(psi1[1,0])**2*100
+
+                if st.button("🔄 Reset vista 3D", key="t1_reset"):
+                    st.session_state["t1_cam"] = DEFAULT_CAMERA
+                fig_int = bloch_plotly([psi1], ['#d62728'], ['|ψ⟩'],
+                                       title="Esfera de Bloch (interactiva)",
+                                       camera_key="t1_cam", height=760)
+                st.plotly_chart(fig_int, use_container_width=True, key="t1_plotly")
+
+                st.caption(f"Ángulos: θ={th:.2f}°, φ={ph:.2f}°  |  Coords: x={x:.3f}, y={y:.3f}, z={z:.3f}  |  P(0)={p0:.1f}%, P(1)={p1:.1f}%")
+
+            with right:
+                fig_exp = draw_bloch_export(
+                    [psi1], ['#d62728'], ['|ψ⟩'],
+                    title="Esfera de Bloch y proyecciones",
+                    figsize=(15.0, 10.0),
+                    sphere_ratio=10.0,
+                    proj_ratio=2.0,
+                    hspace=0.03, wspace=0.04
+                )
+                st.pyplot(fig_exp, use_container_width=True)
+                plt.close(fig_exp)  # 🔒 evita fugas de memoria
+                st.download_button("⬇️ Descargar (PNG, 800 dpi)",
+                                   data=fig_to_png_bytes(fig_exp, 800),
+                                   file_name="bloch_estado.png",
+                                   mime="image/png",
+                                   key="t1_dl")
+
+    # ---------------- Pestaña 2 ----------------
+    with safe_section("Pestaña 2 (Puertas 1Q)"):
+        with tab2:
+            st.subheader("Puertas 1-Qubit: |ψ_in⟩ → |ψ_out⟩")
+            top1, top2 = st.columns([1,1], gap="large")
+
+            with top1:
+                st.markdown("**Estado inicial**")
+                method2 = st.radio("Método", ["Ángulos (θ, φ)", "Amplitudes (α, β)", "Presets"], key="t2_method", horizontal=True)
+                if method2 == "Ángulos (θ, φ)":
+                    th2 = angle_input("θ_in", "t2_theta", 0.0, 180.0, step=0.1, unit="deg", default=0.0)
+                    ph2 = angle_input("φ_in", "t2_phi",   0.0, 360.0, step=0.1, unit="deg", default=0.0)
+                    psi_in = ket_from_angles(th2, ph2)
+                elif method2 == "Amplitudes (α, β)":
+                    a_re2 = st.number_input("α (real)", value=1.0, key="t2_are")
+                    a_im2 = st.number_input("α (imag)", value=0.0, key="t2_aim")
+                    b_re2 = st.number_input("β (real)", value=0.0, key="t2_bre")
+                    b_im2 = st.number_input("β (imag)", value=0.0, key="t2_bim")
+                    psi_in = ket_from_amplitudes(a_re2 + 1j*a_im2, b_re2 + 1j*b_im2)
                 else:
-                    st.info("Este circuito no tiene mediciones o no se ha simulado.")
+                    preset2 = st.selectbox("Preset", ["|0⟩","|1⟩","|+⟩","|−⟩","|+i⟩","|−i⟩"], key="t2_preset")
+                    mp = {"|0⟩":(1,0),"|1⟩":(0,1),"|+⟩":(1/np.sqrt(2),1/np.sqrt(2)),
+                          "|−⟩":(1/np.sqrt(2),-1/np.sqrt(2)),"|+i⟩":(1/np.sqrt(2),1j/np.sqrt(2)),
+                          "|−i⟩":(1/np.sqrt(2),-1j/np.sqrt(2))}
+                    alpha, beta = mp[preset2]
+                    psi_in = ket_from_amplitudes(alpha, beta)
 
-            # Q-sphere
-            with dtabs[2]:
-                if st.session_state.t3_sv is not None:
-                    figQ = plot_state_qsphere(Statevector(st.session_state.t3_sv))
-                    figQ.set_size_inches(6.0, 6.0)
-                    st.pyplot(figQ, use_container_width=False)
-                    plt.close(figQ)
-                    st.download_button("⬇️ Q-sphere (PNG 800 dpi)",
-                                       data=fig_to_png_bytes(figQ, 800,pad_inches=0.02),
-                                       file_name="qsphere.png",
-                                       mime="image/png",
-                                       key="t3_dl_q")
+            with top2:
+                st.markdown("**Puerta**")
+                gname = st.selectbox("Tipo", ["I","X","Y","Z","H","S","S†","T","T†","Rx","Ry","Rz","U(θ,φ,λ)"], key="t2_gate")
+
+                if gname == "Rx":
+                    theta_rx = st.number_input("θ Rx (rad)", value=float(np.pi/2), key="t2_rx", step=0.01, format="%.3f")
+                    U = U_gate("RX", theta_rx); gate_desc = f"Rx({theta_rx:.3f} rad)"
+                elif gname == "Ry":
+                    theta_ry = st.number_input("θ Ry (rad)", value=float(np.pi/2), key="t2_ry", step=0.01, format="%.3f")
+                    U = U_gate("RY", theta_ry); gate_desc = f"Ry({theta_ry:.3f} rad)"
+                elif gname == "Rz":
+                    theta_rz = st.number_input("θ Rz (rad)", value=float(np.pi/2), key="t2_rz", step=0.01, format="%.3f")
+                    U = U_gate("RZ", theta_rz); gate_desc = f"Rz({theta_rz:.3f} rad)"
+                elif gname == "U(θ,φ,λ)":
+                    t_u = angle_input("θ U", "t2_U_theta", -360.0, 360.0, step=0.1, unit="deg", default=90.0)
+                    p_u = angle_input("φ U", "t2_U_phi",   -360.0, 360.0, step=0.1, unit="deg", default=0.0)
+                    l_u = angle_input("λ U", "t2_U_lam",   -360.0, 360.0, step=0.1, unit="deg", default=0.0)
+                    U = U_gate("U", (np.deg2rad(t_u), np.deg2rad(p_u), np.deg2rad(l_u)))
+                    gate_desc = f"U(θ={t_u:.1f}°, φ={p_u:.1f}°, λ={l_u:.1f}°)"
                 else:
-                    st.info("Vector de estado no disponible.")
+                    U = U_gate(gname); gate_desc = gname
 
-            # Statevector (texto)
-            with dtabs[3]:
-                if st.session_state.t3_sv is not None:
-                    st.code(str(st.session_state.t3_sv), language="text")
-                else:
-                    st.info("Vector de estado no disponible.")
+            psi_out = U @ psi_in
 
-# ---------------- Pestaña 4 ----------------
-with tab4:
-    st.subheader("Ejecutor de código Qiskit (define una variable `qc`)")
-    if not QISKIT_AVAILABLE:
-        st.error("Qiskit / qiskit_aer no están instalados.")
-    else:
-        code = st.text_area("Código Python", height=240, key="t4_code", value=
-"""from qiskit import QuantumCircuit
-# Ejemplo: GHZ de 3 qubits
-qc = QuantumCircuit(3,3)
-qc.h(0); qc.cx(0,1); qc.cx(0,2); qc.measure(range(3),range(3))
-""")
-        if st.button("Ejecutar y simular", key="t4_run", type="primary"):
-            ns = {}
-            try:
-                exec(code, {"np":np, "QuantumCircuit":QuantumCircuit}, ns)
-                qc = ns.get("qc", None)
-                if qc is None:
-                    st.warning("Tu código no definió `qc`."); st.stop()
+            left, right = st.columns([0.7, 1.3], gap="small")
 
-                # Diagrama
-                figC = circuit_drawer(qc, output="mpl", style={'name':'mpl'})
-                figC.set_size_inches(9, 3.2)
-                st.pyplot(figC, use_container_width=True)
-                plt.close(figC)
+            with left:
+                if st.button("🔄 Reset vista 3D", key="t2_reset"):
+                    st.session_state["t2_cam"] = DEFAULT_CAMERA
+                fig2_int = bloch_plotly([psi_in, psi_out], ['#1f77b4','#d62728'],
+                                        ['|ψ_in⟩','|ψ_out⟩'],
+                                        title=f"Esfera de Bloch — {gate_desc}",
+                                        camera_key="t2_cam", height=780)
+                st.plotly_chart(fig2_int, use_container_width=True, key="t2_plotly")
 
-                # Simulación
-                sim = Aer.get_backend("aer_simulator")
-                qcsv = qc.remove_final_measurements(inplace=False)
-                qcsv.save_statevector()
-                sv = sim.run(transpile(qcsv, sim)).result().get_statevector()
-                st.markdown("**Vector de estado (sin medidas)**")
-                st.code(str(sv), language="text")
+            with right:
+                fig2_exp = draw_bloch_export(
+                    [psi_in, psi_out], ['#1f77b4','#d62728'], ['|ψ_in⟩','|ψ_out⟩'],
+                    title=f"Esfera de Bloch — {gate_desc}",
+                    figsize=(14.0, 9.6),
+                    sphere_ratio=9.0,
+                    proj_ratio=2.0,
+                    hspace=0.04, wspace=0.05
+                )
+                st.pyplot(fig2_exp, use_container_width=True)
+                plt.close(fig2_exp)
+                st.download_button("⬇️ Descargar (PNG, 800 dpi)",
+                                   data=fig_to_png_bytes(fig2_exp, 800,pad_inches=0.02),
+                                   file_name="bloch_in_out.png",
+                                   mime="image/png",
+                                   key="t2_dl")
 
-                if qc.num_clbits > 0:
-                    qasm = Aer.get_backend("qasm_simulator")
-                    counts = qasm.run(transpile(qc, qasm), shots=1024).result().get_counts()
-                    figH = plot_histogram(counts)
-                    figH.set_size_inches(8.0, 3.0)
-                    st.pyplot(figH, use_container_width=True)
-                    plt.close(figH)
-            except Exception as e:
-                st.error(f"Error al ejecutar tu código: {e}")
+            xin,yin,zin = bloch_xyz(psi_in)
+            xout,yout,zout = bloch_xyz(psi_out)
+            th_in, ph_in   = angles_from_xyz(xin,yin,zin)
+            th_out, ph_out = angles_from_xyz(xout,yout,zout)
+            p0, p1 = abs(psi_out[0,0])**2*100, abs(psi_out[1,0])**2*100
+
+            st.markdown("#### Resultado matemático")
+            st.code(
+                f"U = [[{pretty_c(U[0,0])}, {pretty_c(U[0,1])}],\n"
+                f"     [{pretty_c(U[1,0])}, {pretty_c(U[1,1])}]]\n\n"
+                f"|ψ_in⟩ = [{pretty_c(psi_in[0,0])}, {pretty_c(psi_in[1,0])}]^T\n"
+                f"|ψ_out⟩ = U · |ψ_in⟩ = [{pretty_c(psi_out[0,0])}, {pretty_c(psi_out[1,0])}]^T",
+                language="text"
+            )
+            st.caption(f"Ángulos entrada (θ={th_in:.2f}°, φ={ph_in:.2f}°) → salida (θ={th_out:.2f}°, φ={ph_out:.2f}°).  Probabilidades: P(0)={p0:.2f}%, P(1)={p1:.2f}%.")
+
+    # ---------------- Pestaña 3: Dashboard ----------------
+    with safe_section("Pestaña 3 (Circuitos/Qiskit)"):
+        with tab3:
+            st.subheader("Circuitos predeterminados — Dashboard")
+            if not QISKIT_AVAILABLE:
+                st.error("Qiskit / qiskit_aer no están instalados.")
+            else:
+                left, right = st.columns([1,2], gap="large")
+
+                with left:
+                    algo = st.selectbox("Algoritmo", [
+                        "Bell","GHZ","QFT","Deutsch-Jozsa","Bernstein-Vazirani","Grover","Shor (demo N=15)"
+                    ], key="t3_algo")
+
+                    with st.form("t3_param_form", clear_on_submit=False):
+                        if algo == "Bell":
+                            measure = st.checkbox("Añadir medición", True, key="t3_bell_m")
+                        elif algo == "GHZ":
+                            n = st.number_input("n (qubits ≥2)", min_value=2, value=3, step=1, key="t3_ghz_n")
+                            measure = st.checkbox("Añadir medición", True, key="t3_ghz_m")
+                        elif algo == "QFT":
+                            n = st.number_input("n (qubits ≥1)", min_value=1, value=3, step=1, key="t3_qft_n")
+                            swaps = st.checkbox("SWAPs finales", True, key="t3_qft_s")
+                            measure = st.checkbox("Añadir medición", True, key="t3_qft_m")
+                        elif algo == "Deutsch-Jozsa":
+                            n = st.number_input("n (entrada ≥1)", min_value=1, value=3, step=1, key="t3_dj_n")
+                            kind = st.selectbox("Oráculo", ["balanced","constant1"], key="t3_dj_kind")
+                        elif algo == "Bernstein-Vazirani":
+                            s = st.text_input("Secreto s (binario)", "1011", key="t3_bv_s")
+                        elif algo == "Grover":
+                            n = st.number_input("n (qubits ≥2)", min_value=2, value=3, step=1, key="t3_grover_n")
+                            marked = st.text_input("Marcado (binario longitud n)", "111", key="t3_grover_marked")
+                        elif algo == "Shor (demo N=15)":
+                            a = st.selectbox("a (coprimo con 15)", [2,7,8,11,13], key="t3_shor_a")
+
+                        shots = st.slider("Shots", 100, 8192, 1024, step=100, key="t3_shots")
+                        submitted = st.form_submit_button("Generar y simular", use_container_width=True)
+
+                if "t3_qc" not in st.session_state:
+                    st.session_state.t3_qc = None
+                if "t3_counts" not in st.session_state:
+                    st.session_state.t3_counts = None
+                if "t3_sv" not in st.session_state:
+                    st.session_state.t3_sv = None
+
+                if submitted:
+                    with st.spinner("Simulando con Aer..."):
+                        try:
+                            if algo == "Bell":
+                                qc = qc_bell(measure)
+                            elif algo == "GHZ":
+                                qc = qc_ghz(int(n), measure)
+                            elif algo == "QFT":
+                                qc = qc_qft(int(n), swaps, measure)
+                            elif algo == "Deutsch-Jozsa":
+                                qc = qc_deutsch_jozsa(int(n), kind)
+                            elif algo == "Bernstein-Vazirani":
+                                if not all(c in "01" for c in s):
+                                    st.warning("El secreto s debe ser binario."); st.stop()
+                                qc = qc_bernstein_vazirani(s)
+                            elif algo == "Grover":
+                                if len(marked) != int(n) or not all(c in "01" for c in marked):
+                                    st.warning("Marcado debe ser binario de longitud n."); st.stop()
+                                qc = qc_grover(int(n), marked)
+                            elif algo == "Shor (demo N=15)":
+                                qc = qc_shor_demo_15(int(a))
+
+                            st.session_state.t3_qc = qc
+
+                            # Statevector
+                            sim = Aer.get_backend("aer_simulator")
+                            qcsv = qc.remove_final_measurements(inplace=False)
+                            qcsv.save_statevector()
+                            sv = sim.run(transpile(qcsv, sim)).result().get_statevector()
+                            st.session_state.t3_sv = sv
+
+                            # Medidas
+                            counts = None
+                            if qc.num_clbits > 0:
+                                qasm = Aer.get_backend("qasm_simulator")
+                                counts = qasm.run(transpile(qc, qasm), shots=shots).result().get_counts()
+                            st.session_state.t3_counts = counts
+
+                        except Exception as e:
+                            show_exception("Simulación (tab 3)", e)
+
+                with right:
+                    dtabs = st.tabs(["Diagrama", "Medidas", "Q-sphere", "Statevector"])
+
+                    # Diagrama
+                    with dtabs[0]:
+                        if st.session_state.t3_qc is not None:
+                            try:
+                                figC = circuit_drawer(st.session_state.t3_qc, output="mpl", style={'name':'mpl'})
+                                figC.set_size_inches(9, 3.2)
+                                st.pyplot(figC, use_container_width=True)
+                                plt.close(figC)
+                                st.download_button("⬇️ Diagrama (PNG 800 dpi)",
+                                                   data=fig_to_png_bytes(figC, 800,pad_inches=0.02),
+                                                   file_name="circuito.png",
+                                                   mime="image/png",
+                                                   key="t3_dl_circ")
+                            except Exception as e:
+                                show_exception("Dibujo de circuito", e)
+                        else:
+                            st.info("Genera el circuito a la izquierda.")
+
+                    # Medidas
+                    with dtabs[1]:
+                        if st.session_state.t3_counts is not None:
+                            figH = plot_histogram(st.session_state.t3_counts)
+                            figH.set_size_inches(8.0, 3.0)
+                            st.pyplot(figH, use_container_width=True)
+                            plt.close(figH)
+                            st.download_button("⬇️ Histograma (PNG 800 dpi)",
+                                               data=fig_to_png_bytes(figH, 800,pad_inches=0.02),
+                                               file_name="histograma.png",
+                                               mime="image/png",
+                                               key="t3_dl_hist")
+                        else:
+                            st.info("Este circuito no tiene mediciones o no se ha simulado.")
+
+                    # Q-sphere
+                    with dtabs[2]:
+                        if st.session_state.t3_sv is not None:
+                            figQ = plot_state_qsphere(Statevector(st.session_state.t3_sv))
+                            figQ.set_size_inches(6.0, 6.0)
+                            st.pyplot(figQ, use_container_width=False)
+                            plt.close(figQ)
+                            st.download_button("⬇️ Q-sphere (PNG 800 dpi)",
+                                               data=fig_to_png_bytes(figQ, 800,pad_inches=0.02),
+                                               file_name="qsphere.png",
+                                               mime="image/png",
+                                               key="t3_dl_q")
+                        else:
+                            st.info("Vector de estado no disponible.")
+
+                    # Statevector (texto)
+                    with dtabs[3]:
+                        if st.session_state.t3_sv is not None:
+                            st.code(str(st.session_state.t3_sv), language="text")
+                        else:
+                            st.info("Vector de estado no disponible.")
+
+    # ---------------- Pestaña 4 ----------------
+    with safe_section("Pestaña 4 (Ejecutor Qiskit)"):
+        with tab4:
+            st.subheader("Ejecutor de código Qiskit (define una variable `qc`)")
+            if not QISKIT_AVAILABLE:
+                st.error("Qiskit / qiskit_aer no están instalados.")
+            else:
+                code = st.text_area("Código Python", height=240, key="t4_code", value=
+    """from qiskit import QuantumCircuit
+    # Ejemplo: GHZ de 3 qubits
+    qc = QuantumCircuit(3,3)
+    qc.h(0); qc.cx(0,1); qc.cx(0,2); qc.measure(range(3),range(3))
+    """)
+                if st.button("Ejecutar y simular", key="t4_run", type="primary"):
+                    with st.spinner("Ejecutando y simulando..."):
+                        try:
+                            ns = {}
+                            exec(code, {"np":np, "QuantumCircuit":QuantumCircuit}, ns)
+                            qc = ns.get("qc", None)
+                            if qc is None:
+                                st.warning("Tu código no definió `qc`."); st.stop()
+
+                            # Diagrama
+                            figC = circuit_drawer(qc, output="mpl", style={'name':'mpl'})
+                            figC.set_size_inches(9, 3.2)
+                            st.pyplot(figC, use_container_width=True)
+                            plt.close(figC)
+
+                            # Simulación
+                            sim = Aer.get_backend("aer_simulator")
+                            qcsv = qc.remove_final_measurements(inplace=False)
+                            qcsv.save_statevector()
+                            sv = sim.run(transpile(qcsv, sim)).result().get_statevector()
+                            st.markdown("**Vector de estado (sin medidas)**")
+                            st.code(str(sv), language="text")
+
+                            if qc.num_clbits > 0:
+                                qasm = Aer.get_backend("qasm_simulator")
+                                counts = qasm.run(transpile(qc, qasm), shots=1024).result().get_counts()
+                                figH = plot_histogram(counts)
+                                figH.set_size_inches(8.0, 3.0)
+                                st.pyplot(figH, use_container_width=True)
+                                plt.close(figH)
+                        except Exception as e:
+                            show_exception("Ejecutor (tab 4)", e)
+
+except Exception as e:
+    # Airbag global: nunca pantalla blanca
+    show_exception("App principal", e)
