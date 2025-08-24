@@ -1,0 +1,22 @@
+# Archivos de Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Entornos virtuales
+.venv/
+venv/
+ENV/
+env/
+
+# Configuración local
+.env
+.python-version
+
+# Configuraciones secretas de Streamlit
+.streamlit/secrets.toml
+
+# Archivos temporales
+.DS_Store
+Thumbs.db
