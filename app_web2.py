@@ -21,7 +21,9 @@ try:
 except Exception:
     QISKIT_AVAILABLE = False
 
-#st.set_page_config(page_title="Quantum Toolkit (Streamlit)", layout="wide", page_icon="⚛️")
+# ⚠️ NO LLAMAR AQUÍ A set_page_config (ya se hace en secure_app.py)
+# st.set_page_config(page_title="Quantum Toolkit (Streamlit)", layout="wide", page_icon="⚛️")
+
 st.title("⚛️ Quantum Toolkit — Esfera de Bloch, Puertas y Circuitos (Streamlit)")
 
 # ================= Utilidades 1 qubit =================
@@ -105,15 +107,16 @@ def angle_input(label, key_base, min_val, max_val, *, step=0.1, unit="deg", defa
     Control combinado: slider + number_input sincronizados.
     Devuelve el valor float actual.
     Crea dos claves: f"{key_base}_slider" y f"{key_base}_input".
+
+    ✅ Evita el warning de Streamlit: usamos session_state como fuente de verdad
+    y NO pasamos 'value=' al widget cuando también hay 'key'.
     """
     slider_key = f"{key_base}_slider"
     input_key  = f"{key_base}_input"
 
-    # Estado inicial
-    if slider_key not in st.session_state:
-        st.session_state[slider_key] = float(default)
-    if input_key not in st.session_state:
-        st.session_state[input_key] = float(default)
+    # Estado inicial (solo una vez)
+    st.session_state.setdefault(slider_key, float(default))
+    st.session_state.setdefault(input_key,  float(default))
 
     # Callbacks de sincronización
     def _sync_from_slider():
@@ -121,23 +124,37 @@ def angle_input(label, key_base, min_val, max_val, *, step=0.1, unit="deg", defa
 
     def _sync_from_input():
         v = float(st.session_state[input_key])
-        v = max(min_val, min(max_val, v))  # clamp
-        st.session_state[input_key] = v
+        # clamp
+        if v < float(min_val): v = float(min_val)
+        if v > float(max_val): v = float(max_val)
+        st.session_state[input_key]  = v
         st.session_state[slider_key] = v
 
     csl, cnum = st.columns([4, 1])
+
+    # ✅ SIN value= (usa session_state + key)
     csl.slider(
-        f"{label} ({unit})", min_val, max_val,
-        value=float(st.session_state[slider_key]),
-        step=step, key=slider_key, on_change=_sync_from_slider,
-        disabled=disabled, help=help
+        f"{label} ({unit})",
+        min_val, max_val,
+        step=step,
+        key=slider_key,
+        on_change=_sync_from_slider,
+        disabled=disabled,
+        help=help
     )
+
+    # ✅ SIN value= (usa session_state + key)
     cnum.number_input(
-        " ", min_value=float(min_val), max_value=float(max_val),
-        value=float(st.session_state[input_key]),
-        step=step, key=input_key, on_change=_sync_from_input,
-        disabled=disabled, format=fmt
+        " ",
+        min_value=float(min_val),
+        max_value=float(max_val),
+        step=float(step),
+        key=input_key,
+        on_change=_sync_from_input,
+        disabled=disabled,
+        format=fmt
     )
+
     return float(st.session_state[slider_key])
 
 # ============ Bloch: Plotly interactivo + Export Matplotlib ============
@@ -187,14 +204,13 @@ def bloch_plotly(states, colors, labels, title, camera_key, height=640):
     # Etiquetas de estados base
     lbl = 1.2
     labels_text = [
-    (0,0, lbl,  r"$|0\rangle$"),
-    (0,0,-lbl,  r"$|1\rangle$"),
-    ( lbl,0,0,  r"$|+\rangle$"),   # X+
-    (-lbl,0,0,  r"$|-\rangle$"),   # X-
-    (0,  lbl,0, r"$|+i\rangle$"),  # Y+
-    (0, -lbl,0, r"$|-i\rangle$")   # Y-
-]
-
+        (0,0, lbl,  r"$|0\rangle$"),
+        (0,0,-lbl,  r"$|1\rangle$"),
+        ( lbl,0,0,  r"$|+\rangle$"),   # X+
+        (-lbl,0,0,  r"$|-\rangle$"),   # X-
+        (0,  lbl,0, r"$|+i\rangle$"),  # Y+
+        (0, -lbl,0, r"$|-i\rangle$")   # Y-
+    ]
     for x,y,z,t in labels_text:
         fig.add_trace(go.Scatter3d(x=[x], y=[y], z=[z], mode='text',
                                    text=[t], textfont=dict(color="navy", size=14),
@@ -238,11 +254,11 @@ def bloch_plotly(states, colors, labels, title, camera_key, height=640):
 def draw_bloch_export(
     states, colors, labels, *,
     title="Esfera de Bloch", subtitle=None,
-    figsize=(14.0, 9.4),      # << controla tamaño total en la web
-    sphere_ratio=9.0,         # << más alto = esfera más grande
-    proj_ratio=2.2,           # << altura fila de proyecciones
-    wspace=0.05,              # << hueco horizontal entre ejes
-    hspace=0.04               # << hueco vertical entre filas
+    figsize=(14.0, 9.4),
+    sphere_ratio=9.0,
+    proj_ratio=2.2,
+    wspace=0.05,
+    hspace=0.04
 ):
     fig = Figure(figsize=figsize)
     gs = fig.add_gridspec(
@@ -274,22 +290,22 @@ def draw_bloch_export(
         ax3d.text(0, t, 0, f"{t:.1f}", color="gray", fontsize=8, ha="center", va="center")
         ax3d.text(0, 0, t, f"{t:.1f}", color="gray", fontsize=8, ha="center", va="center")
 
-    # Etiquetas base (X: |+>,|-> ; Y: |+i>,|-i)
+    # Etiquetas base
     lbl = 1.2
     ax3d.text(0, 0,  lbl, r"$|0\rangle$",  color="navy", ha="center", va="center", fontsize=10)
     ax3d.text(0, 0, -lbl, r"$|1\rangle$",  color="navy", ha="center", va="center", fontsize=10)
-    ax3d.text( lbl, 0, 0, r"$|+\rangle$",  color="navy", ha="center", va="center", fontsize=10)  # X+
-    ax3d.text(-lbl, 0, 0, r"$|-\rangle$",  color="navy", ha="center", va="center", fontsize=10)  # X-
-    ax3d.text(0,  lbl, 0, r"$|+i\rangle$", color="navy", ha="center", va="center", fontsize=10)  # Y+
-    ax3d.text(0, -lbl, 0, r"$|-i\rangle$", color="navy", ha="center", va="center", fontsize=10)  # Y-
+    ax3d.text( lbl, 0, 0, r"$|+\rangle$",  color="navy", ha="center", va="center", fontsize=10)
+    ax3d.text(-lbl, 0, 0, r"$|-\rangle$",  color="navy", ha="center", va="center", fontsize=10)
+    ax3d.text(0,  lbl, 0, r"$|+i\rangle$", color="navy", ha="center", va="center", fontsize=10)
+    ax3d.text(0, -lbl, 0, r"$|-i\rangle$", color="navy", ha="center", va="center", fontsize=10)
 
-    # Vectores (usa tu bloch_xyz existente)
+    # Vectores
     for (psi, col) in zip(states, colors):
         x, y, z = bloch_xyz(psi)
         ax3d.quiver(0, 0, 0, x, y, z, color=col, arrow_length_ratio=0.08, linewidth=2.4, length=1.0)
         ax3d.scatter([x],[y],[z], color=col, s=22, zorder=3)
 
-    # Leyenda IN/OUT en el 3D
+    # Leyenda IN/OUT
     alias = {"|ψ_in⟩": "IN", "|ψ_out⟩": "OUT"}
     legend_labels = [alias.get(lab, lab) for lab in labels]
     handles = [Line2D([0],[0], color=col, lw=3) for col in colors]
@@ -342,12 +358,9 @@ def draw_bloch_export(
     proj(ax_yz, "z","y", "Plano YZ", draw_theta=True, psi=psi0, col=col0)
     proj(ax_xz, "z","x", "Plano XZ")
 
-    # Márgenes exteriores
     fig.subplots_adjust(left=0.02, right=0.995, top=0.985, bottom=0.06,
                         wspace=wspace, hspace=hspace)
     return fig
-
-
 
 # ================== Circuitos predeterminados ==================
 def qc_bell(measure=True):
@@ -403,8 +416,6 @@ def _mcx(qc, ctrls, tgt):
     try:
         qc.mcx(ctrls, tgt)  # Qiskit moderno
     except Exception:
-        # Fallback: si no existiera mcx (versiones muy antiguas), aproximar con cascada de Toffolis es complejo;
-        # aquí simplemente lanzamos un error claro:
         raise RuntimeError("Tu versión de Qiskit no soporta 'mcx'. Actualiza qiskit a 0.45+ o usa menos controles.")
 
 def qc_grover(n=3, marked=None):
@@ -418,12 +429,11 @@ def qc_grover(n=3, marked=None):
     oracle = QuantumCircuit(n, name="Oracle")
     for i,c in enumerate(reversed(marked)):
         if c=="0": oracle.x(i)
-    # multi-Z sobre el último qubit como target
     oracle.h(n-1); _mcx(oracle, list(range(n-1)), n-1); oracle.h(n-1)
     for i,c in enumerate(reversed(marked)):
         if c=="0": oracle.x(i)
 
-    # Difusor (inversión sobre la media)
+    # Difusor
     diffuser = QuantumCircuit(n, name="Diffuser")
     diffuser.h(range(n)); diffuser.x(range(n))
     diffuser.h(n-1); _mcx(diffuser, list(range(n-1)), n-1); diffuser.h(n-1)
@@ -451,7 +461,7 @@ def qc_shor_demo_15(a=2):
     for q in range(n_count): qc.h(q)
     qc.x(n_count+3)
     for q in range(n_count):
-        qc.append(c_amod15(a, 2**q), [q] + list(range(n_count, n_count+4)))
+        qc.append(c_amod15(a, 2**q), [q] + list(range(n_count, n_count+4)])
     # QFT^-1
     for j in range(n_count//2): qc.swap(j, n_count-1-j)
     for j in range(n_count):
@@ -472,9 +482,7 @@ tab1, tab2, tab3, tab4 = st.tabs([
 # ---------------- Pestaña 1 ----------------
 with tab1:
     st.subheader("Esfera de Bloch interactiva y proyecciones")
-    # Columnas: controles + (reset + esfera interactiva) en izquierda; export a la derecha
-    left, right = st.columns([0.65, 1.35], gap="small")  # derecha más ancha
-
+    left, right = st.columns([0.65, 1.35], gap="small")
 
     with left:
         method1 = st.radio("Método de entrada", ["Ángulos (θ, φ)", "Amplitudes (α, β)", "Presets"],
@@ -501,7 +509,6 @@ with tab1:
         th, ph = angles_from_xyz(x,y,z)
         p0, p1 = abs(psi1[0,0])**2*100, abs(psi1[1,0])**2*100
 
-        # Reset de cámara y esfera interactiva DEBAJO del botón
         if st.button("🔄 Reset vista 3D", key="t1_reset"):
             st.session_state["t1_cam"] = DEFAULT_CAMERA
         fig_int = bloch_plotly([psi1], ['#d62728'], ['|ψ⟩'],
@@ -515,13 +522,11 @@ with tab1:
         fig_exp = draw_bloch_export(
             [psi1], ['#d62728'], ['|ψ⟩'],
             title="Esfera de Bloch y proyecciones",
-            figsize=(15.0, 10.0),   # aún más grande en pantalla
+            figsize=(15.0, 10.0),
             sphere_ratio=10.0,
             proj_ratio=2.0,
             hspace=0.03, wspace=0.04
         )
-
-
         st.pyplot(fig_exp, use_container_width=True)
         st.download_button("⬇️ Descargar (PNG, 800 dpi)",
                            data=fig_to_png_bytes(fig_exp, 800),
@@ -532,7 +537,6 @@ with tab1:
 # ---------------- Pestaña 2 ----------------
 with tab2:
     st.subheader("Puertas 1-Qubit: |ψ_in⟩ → |ψ_out⟩")
-    # Controles arriba, solo el método seleccionado aparece
     top1, top2 = st.columns([1,1], gap="large")
 
     with top1:
@@ -580,9 +584,7 @@ with tab2:
 
     psi_out = U @ psi_in
 
-    # Layout visual: izquierda esfera interactiva, derecha proyecciones
     left, right = st.columns([0.7, 1.3], gap="small")
-
 
     with left:
         if st.button("🔄 Reset vista 3D", key="t2_reset"):
@@ -602,7 +604,6 @@ with tab2:
             proj_ratio=2.0,
             hspace=0.04, wspace=0.05
         )
-
         st.pyplot(fig2_exp, use_container_width=True)
         st.download_button("⬇️ Descargar (PNG, 800 dpi)",
                            data=fig_to_png_bytes(fig2_exp, 800,pad_inches=0.02),
@@ -711,7 +712,7 @@ with tab3:
         with right:
             dtabs = st.tabs(["Diagrama", "Medidas", "Q-sphere", "Statevector"])
 
-            # Diagrama (compacto)
+            # Diagrama
             with dtabs[0]:
                 if st.session_state.t3_qc is not None:
                     try:
@@ -728,7 +729,7 @@ with tab3:
                 else:
                     st.info("Genera el circuito a la izquierda.")
 
-            # Medidas (histograma compacto)
+            # Medidas
             with dtabs[1]:
                 if st.session_state.t3_counts is not None:
                     figH = plot_histogram(st.session_state.t3_counts)
@@ -742,7 +743,7 @@ with tab3:
                 else:
                     st.info("Este circuito no tiene mediciones o no se ha simulado.")
 
-            # Q-sphere (compacta)
+            # Q-sphere
             with dtabs[2]:
                 if st.session_state.t3_sv is not None:
                     figQ = plot_state_qsphere(Statevector(st.session_state.t3_sv))
@@ -782,7 +783,7 @@ qc.h(0); qc.cx(0,1); qc.cx(0,2); qc.measure_all()
                 qc = ns.get("qc", None)
                 if qc is None:
                     st.warning("Tu código no definió `qc`."); st.stop()
-                # Diagrama compacto
+                # Diagrama
                 figC = circuit_drawer(qc, output="mpl", style={'name':'mpl'})
                 figC.set_size_inches(9, 3.2)
                 st.pyplot(figC, use_container_width=True)
