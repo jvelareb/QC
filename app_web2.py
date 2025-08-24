@@ -443,7 +443,7 @@ def qc_grover(n=3, marked=None):
     for _ in range(iters):
         qc.append(oracle.to_gate(), range(n))
         qc.append(diffuser.to_gate(), range(n))
-    qc.measure_all()
+    qc.measure(range(n), range(n))
     return qc
 
 def qc_shor_demo_15(a=2):
@@ -461,7 +461,7 @@ def qc_shor_demo_15(a=2):
     for q in range(n_count): qc.h(q)
     qc.x(n_count+3)
     for q in range(n_count):
-        qc.append(c_amod15(a, 2**q), [q] + list(range(n_count, n_count+4)])
+        qc.append(c_amod15(a, 2**q), [q] + list(range(n_count, n_count+4)))
     # QFT^-1
     for j in range(n_count//2): qc.swap(j, n_count-1-j)
     for j in range(n_count):
@@ -696,7 +696,9 @@ with tab3:
 
                 # Simulación
                 sim = Aer.get_backend("aer_simulator")
-                qcsv = qc.remove_final_measurements(inplace=False); qcsv.save_statevector()
+                qcsv = qc.copy()
+                qcsv.remove_final_measurements()
+                qcsv.save_statevector()
                 sv = sim.run(transpile(qcsv, sim)).result().get_statevector()
                 st.session_state.t3_sv = sv
 
@@ -774,7 +776,7 @@ with tab4:
 """from qiskit import QuantumCircuit
 # Ejemplo: GHZ de 3 qubits
 qc = QuantumCircuit(3,3)
-qc.h(0); qc.cx(0,1); qc.cx(0,2); qc.measure_all()
+qc.h(0); qc.cx(0,1); qc.cx(0,2); qc.measure(range(3),range(3))
 """)
         if st.button("Ejecutar y simular", key="t4_run", type="primary"):
             ns = {}
@@ -790,7 +792,9 @@ qc.h(0); qc.cx(0,1); qc.cx(0,2); qc.measure_all()
 
                 # Simulación
                 sim = Aer.get_backend("aer_simulator")
-                qcsv = qc.remove_final_measurements(inplace=False); qcsv.save_statevector()
+                qcsv = qc.copy()
+                qcsv.remove_final_measurements()
+                qcsv.save_statevector()
                 sv = sim.run(transpile(qcsv, sim)).result().get_statevector()
                 st.markdown("**Vector de estado (sin medidas)**")
                 st.code(str(sv), language="text")
