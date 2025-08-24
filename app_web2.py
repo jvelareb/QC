@@ -21,7 +21,7 @@ try:
 except Exception:
     QISKIT_AVAILABLE = False
 
-st.set_page_config(page_title="Quantum Toolkit (Streamlit)", layout="wide", page_icon="⚛️")
+#st.set_page_config(page_title="Quantum Toolkit (Streamlit)", layout="wide", page_icon="⚛️")
 st.title("⚛️ Quantum Toolkit — Esfera de Bloch, Puertas y Circuitos (Streamlit)")
 
 # ================= Utilidades 1 qubit =================
