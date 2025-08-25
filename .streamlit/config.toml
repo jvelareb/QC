@@ -1,0 +1,23 @@
+[server]
+headless = true
+address = "0.0.0.0"
+
+# Dejamos que Railway marque el puerto con la var/env PORT.
+# No pongas "port = $PORT" aquí porque TOML no expande envs y dará error.
+# El puerto se pasa por CLI en el CMD del Dockerfile.
+
+enableCORS = true
+enableXsrfProtection = true
+maxUploadSize = 200
+
+[browser]
+gatherUsageStats = false
+
+[client]
+showErrorDetails = true
+
+[theme]
+primaryColor = "#6c9ef8"
+backgroundColor = "#ffffff"
+secondaryBackgroundColor = "#f7f9fc"
+textColor = "#222222"

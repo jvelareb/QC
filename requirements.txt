@@ -1,18 +1,11 @@
 streamlit==1.36.0
-numpy==1.26.4
-matplotlib==3.8.4
-plotly==5.22.0
+numpy
+matplotlib
+plotly
+qiskit==1.1.2
+qiskit-aer==0.15.1
+pylatexenc
 
-# Qiskit + Aer (ruedas precompiladas para manylinux)
-qiskit==1.1.1
-qiskit-aer==0.13.3
-
-# Requisito de circuit_drawer (backend matplotlib)
-pylatexenc==2.10
-
-# Dependencias que Aer suele necesitar
-scipy==1.11.4
-pillow==10.3.0
 
 
 
