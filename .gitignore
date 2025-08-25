@@ -6,14 +6,9 @@ __pycache__/
 .venv/
 venv/
 env/
-.buildozer/
-
-# Streamlit cache & logs
-.streamlit/cache/
+# Streamlit
 .streamlit/secrets.toml
-**/.ipynb_checkpoints
-
-# OS
+# OS/IDE
 .DS_Store
 Thumbs.db
-
+.vscode/

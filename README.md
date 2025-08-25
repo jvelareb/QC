@@ -1,20 +1,16 @@
-# QC Qiskit Minimal (Streamlit + Railway)
+# QC (Streamlit + Qiskit) — Railway (Docker)
 
-## Variables de entorno (Railway → Variables)
-- USER_USERNAME
-- USER_PASSWORD_SHA256
-- ADMIN_USERNAME
-- ADMIN_PASSWORD_SHA256
-- ADMIN_API_KEY  (opcional)
+## Despliegue
+1. Conecta el repo a Railway → detectará el **Dockerfile** automáticamente.
+2. Variables de entorno (Service → Variables):
+   - `USER_USERNAME`
+   - `USER_PASSWORD_SHA256`
+   - `ADMIN_USERNAME`
+   - `ADMIN_PASSWORD_SHA256`
+   - (opcional) `ADMIN_API_KEY`
+   - (opcional) `OPENAI_API_KEY`
 
-### SHA-256 (PowerShell)
-$pwd = Read-Host "Contraseña"
-$bytes = [Text.Encoding]::UTF8.GetBytes($pwd)
-$hash  = [Security.Cryptography.SHA256]::Create().ComputeHash($bytes)
--join ($hash | ForEach-Object { $_.ToString("x2") })
+Generar hash:
+```python
+import hashlib; print(hashlib.sha256("TU_CONTRASEÑA".encode()).hexdigest())
 
-### Despliegue
-1) git init && git add . && git commit -m "init qiskit"
-2) Sube a GitHub
-3) Railway → New Project → Deploy from GitHub
-4) Añade variables y Deploy
