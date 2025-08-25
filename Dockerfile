@@ -1,35 +1,23 @@
-# Imagen ligera y estable para Qiskit + Streamlit
-FROM python:3.10-slim
+# Imagen base oficial de Python
+FROM python:3.12-slim
 
-# Evitar bytecode y forzar logs en stdout
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
-    PIP_NO_CACHE_DIR=1 \
-    MPLBACKEND=Agg
+# Configuración de entorno
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
 
-# Dependencias del sistema (necesarias para qiskit-aer y compiladores básicos)
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential git \
- && rm -rf /var/lib/apt/lists/*
-
+# Crea y usa un directorio de trabajo
 WORKDIR /app
 
-# Instala dependencias Python primero (aprovecha cache de capas Docker)
-COPY requirements.txt ./
-RUN python -m pip install --upgrade pip \
- && pip install -r requirements.txt
+# Copia requirements y los instala
+COPY requirements.txt /app/
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Copia el resto del proyecto
-COPY . .
+# Copia toda tu app
+COPY . /app
 
-# Railway inyecta $PORT. Por si acaso, define un default.
-ENV PORT=8080
+# Railway asigna automáticamente el puerto en la variable $PORT
+EXPOSE 8501
 
-# Lanza Streamlit escuchando en 0.0.0.0:$PORT y sin CORS/XSRF para evitar la pantalla en blanco
-CMD streamlit run app_web2.py \
-    --server.headless=true \
-    --server.address=0.0.0.0 \
-    --server.port=${PORT} \
-    --server.enableCORS=false \
-    --server.enableXsrfProtection=false \
-    --browser.gatherUsageStats=false
+# Ejecuta Streamlit con el puerto correcto
+CMD streamlit run app_web2.py --server.port=${PORT} --server.address=0.0.0.0
+
