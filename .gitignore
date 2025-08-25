@@ -1,5 +1,19 @@
+# Python
 __pycache__/
-.env
 *.pyc
-.DS_Store
+*.pyo
+*.pyd
+.venv/
+venv/
+env/
+.buildozer/
+
+# Streamlit cache & logs
+.streamlit/cache/
 .streamlit/secrets.toml
+**/.ipynb_checkpoints
+
+# OS
+.DS_Store
+Thumbs.db
+

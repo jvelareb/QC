@@ -1,21 +1,26 @@
-# app_web2.py — versión adaptada para render estable (sin Plotly)
+# app_web2.py — versión estable con Bloch (Matplotlib) + proyecciones y fallback de circuit_drawer
 import io
 import numpy as np
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
+from matplotlib.patches import Arc
 import streamlit as st
 
 # Qiskit
 from qiskit import QuantumCircuit, transpile
 from qiskit.quantum_info import Statevector
 from qiskit_aer import Aer
-from qiskit.visualization import (
-    plot_bloch_multivector,
-    plot_histogram,
-    circuit_drawer,
-)
+from qiskit.visualization import plot_histogram
+
+# ===== pylatexenc es opcional (para circuit_drawer con 'mpl')
+try:
+    from qiskit.visualization import circuit_drawer
+    _HAS_PYLATEXENC = True
+except Exception:
+    _HAS_PYLATEXENC = False
+
 
 # ================= Utilidades básicas =================
 @st.cache_resource(show_spinner=False)
@@ -26,12 +31,15 @@ def get_backends():
     }
 
 @st.cache_data(show_spinner=False)
-def fig_to_png(_fig: Figure, dpi=300):  # <- OJO: _fig con guion bajo
+def fig_to_png_bytes(_fig: Figure, dpi=800, *, bbox_inches="tight", pad_inches=0.02):
+    """Exporta Figure a PNG en memoria (el guion bajo evita errores de hash en cache)."""
     buf = io.BytesIO()
-    _fig.savefig(buf, format="png", dpi=dpi, bbox_inches="tight", pad_inches=0.05)
+    _fig.savefig(buf, format="png", dpi=dpi, bbox_inches=bbox_inches, pad_inches=pad_inches)
     buf.seek(0)
     return buf
 
+
+# ================= Bloch helpers (Matplotlib puro) =================
 def ket_from_angles(theta_deg: float, phi_deg: float):
     th = np.deg2rad(theta_deg); ph = np.deg2rad(phi_deg)
     a = np.cos(th/2.0); b = np.exp(1j*ph)*np.sin(th/2.0)
@@ -39,6 +47,109 @@ def ket_from_angles(theta_deg: float, phi_deg: float):
     n = np.linalg.norm(v)
     return v / (n if n else 1.0)
 
+def bloch_xyz_from_statevector(sv: Statevector):
+    a, b = sv.data[0], sv.data[1]
+    x = 2*np.real(np.conj(a)*b)
+    y = 2*np.imag(np.conj(b)*a)   # == -2*Im(conj(a)*b)
+    z = np.abs(a)**2 - np.abs(b)**2
+    return float(x), float(y), float(z)
+
+def _draw_bloch_axes(ax):
+    # Esfera
+    u = np.linspace(0, 2*np.pi, 140)
+    v = np.linspace(0, np.pi, 140)
+    xs = np.outer(np.cos(u), np.sin(v))
+    ys = np.outer(np.sin(u), np.sin(v))
+    zs = np.outer(np.ones_like(u), np.cos(v))
+    ax.plot_surface(xs, ys, zs, color="#8ab4f8", alpha=0.12, edgecolor="#789", linewidth=0.25, zorder=0)
+    # Ejes
+    L = 1.1
+    ax.plot([-L,L],[0,0],[0,0], color="k", lw=1.0)
+    ax.plot([0,0],[-L,L],[0,0], color="k", lw=1.0)
+    ax.plot([0,0],[0,0],[-L,L], color="k", lw=1.0)
+    # Marcas
+    for t in (-1.0,-0.5,0.5,1.0):
+        ax.text(t,0,0,f"{t:.1f}", color="gray", fontsize=8, ha="center", va="center")
+        ax.text(0,t,0,f"{t:.1f}", color="gray", fontsize=8, ha="center", va="center")
+        ax.text(0,0,t,f"{t:.1f}", color="gray", fontsize=8, ha="center", va="center")
+    # Etiquetas base
+    lbl = 1.2
+    ax.text(0,0, lbl,  r"$|0\rangle$",  color="navy", ha="center", va="center", fontsize=10)
+    ax.text(0,0,-lbl,  r"$|1\rangle$",  color="navy", ha="center", va="center", fontsize=10)
+    ax.text( lbl,0,0,  r"$|+\rangle$",  color="navy", ha="center", va="center", fontsize=10)
+    ax.text(-lbl,0,0,  r"$|-\rangle$",  color="navy", ha="center", va="center", fontsize=10)
+    ax.text(0, lbl,0,  r"$|+i\rangle$", color="navy", ha="center", va="center", fontsize=10)
+    ax.text(0,-lbl,0,  r"$|-i\rangle$", color="navy", ha="center", va="center", fontsize=10)
+    # Estética
+    ax.set_box_aspect((1,1,1))
+    ax.set_axis_off()
+    ax.view_init(elev=22, azim=30)
+
+def draw_bloch_matplotlib(sv: Statevector, *, figsize=(6,6), title="Esfera de Bloch", color="#d62728"):
+    x, y, z = bloch_xyz_from_statevector(sv)
+    fig = plt.figure(figsize=figsize)
+    ax = fig.add_subplot(111, projection="3d")
+    _draw_bloch_axes(ax)
+    # vector
+    ax.quiver(0,0,0, x,y,z, color=color, arrow_length_ratio=0.08, linewidth=2.4, length=1.0, zorder=3)
+    ax.scatter([x],[y],[z], color=color, s=28, zorder=4)
+    ax.set_title(title, pad=6)
+    fig.tight_layout()
+    return fig
+
+def draw_bloch_with_projections(sv: Statevector, *, figsize=(14.0, 9.4),
+                                sphere_ratio=9.0, proj_ratio=2.2, title="Esfera de Bloch y proyecciones",
+                                color="#d62728"):
+    """Esfera 3D + proyecciones XY, YZ, XZ (como tu versión antigua)."""
+    x, y, z = bloch_xyz_from_statevector(sv)
+    from matplotlib.lines import Line2D
+
+    fig = Figure(figsize=figsize)
+    gs = fig.add_gridspec(
+        2, 3,
+        height_ratios=[sphere_ratio, proj_ratio],
+        hspace=0.04, wspace=0.05,
+    )
+    ax3d = fig.add_subplot(gs[0, :], projection="3d")
+    _draw_bloch_axes(ax3d)
+    ax3d.quiver(0,0,0, x,y,z, color=color, arrow_length_ratio=0.08, linewidth=2.4, length=1.0, zorder=3)
+    ax3d.scatter([x],[y],[z], color=color, s=28, zorder=4)
+    ax3d.set_title(title, pad=4)
+
+    def _proj(ax, c1, c2, name, draw_theta=False, draw_phi=False):
+        circ = plt.Circle((0,0), 1.0, fill=False, ls="--", color="#789", linewidth=0.8)
+        ax.add_patch(circ)
+        ax.axhline(0, color="#aaa", lw=0.6)
+        ax.axvline(0, color="#aaa", lw=0.6)
+        ax.set_xlim(-1.02, 1.02); ax.set_ylim(-1.02, 1.02)
+        ax.set_xlabel(c1, labelpad=1); ax.set_ylabel(c2, labelpad=1)
+        ax.set_title(name, pad=2, fontsize=10)
+        ax.margins(0); ax.grid(True, ls=":", alpha=0.35)
+        data = {"x": x, "y": y, "z": z}
+        ax.plot([0, data[c1]],[0, data[c2]], color=color, lw=1.8)
+        ax.scatter([data[c1]],[data[c2]], color=color, s=26, zorder=3)
+        # ángulos (theta/phi) opcionales
+        th = np.arccos(np.clip(z, -1, 1))
+        ph = np.arctan2(y, x)
+        if draw_phi:
+            ax.add_patch(Arc((0,0), 0.56, 0.56, angle=0,   theta1=0, theta2=np.rad2deg(ph), color=color, ls="--", lw=0.9))
+            ax.text(0.37*np.cos(ph/2), 0.37*np.sin(ph/2), r"$\varphi$", color=color, fontsize=10)
+        if draw_theta:
+            ax.add_patch(Arc((0,0), 0.56, 0.56, angle=-90, theta1=0, theta2=np.rad2deg(th), color=color, ls="--", lw=0.9))
+            ax.text(0.37*np.sin(th/2), 0.37*np.cos(th/2), r"$\theta$", color=color, fontsize=10)
+
+    ax_xy = fig.add_subplot(gs[1, 0], aspect="equal")
+    ax_yz = fig.add_subplot(gs[1, 1], aspect="equal")
+    ax_xz = fig.add_subplot(gs[1, 2], aspect="equal")
+    _proj(ax_xy, "y","x", "Plano XY", draw_phi=True)
+    _proj(ax_yz, "z","y", "Plano YZ", draw_theta=True)
+    _proj(ax_xz, "z","x", "Plano XZ")
+
+    fig.subplots_adjust(left=0.02, right=0.995, top=0.985, bottom=0.06)
+    return fig
+
+
+# ================= Puertas 1-qubit =================
 def apply_single_qubit_gate(sv: Statevector, gate: str, param=None) -> Statevector:
     qc = QuantumCircuit(1)
     g = gate.upper()
@@ -59,9 +170,10 @@ def apply_single_qubit_gate(sv: Statevector, gate: str, param=None) -> Statevect
         qc.u(theta, phi, lam, 0)
     return sv.evolve(qc)
 
-# ================= App principal =================
+
+# ================= Interfaz principal =================
 def run_app():
-    st.title("⚛️ Quantum Toolkit — Qiskit (estable sin Plotly)")
+    st.title("⚛️ Quantum Toolkit — Matplotlib + Qiskit (estable)")
 
     tab1, tab2, tab3, tab4 = st.tabs([
         "1) Bloch 1-Qubit",
@@ -72,18 +184,19 @@ def run_app():
 
     # ---------- TAB 1: Bloch ----------
     with tab1:
-        st.subheader("Esfera de Bloch (Qiskit + Matplotlib)")
+        st.subheader("Esfera de Bloch con proyecciones (Matplotlib)")
         c1, c2 = st.columns(2)
         with c1:
             th = st.slider("θ (deg)", 0.0, 180.0, 45.0, 0.1, key="t1_theta")
+        with c2:
             ph = st.slider("φ (deg)", 0.0, 360.0, 30.0, 0.1, key="t1_phi")
 
         sv = Statevector(ket_from_angles(th, ph))
+
         try:
-            fig = plot_bloch_multivector(sv)
-            fig.set_size_inches(5.6, 5.6)
-            st.pyplot(fig, use_container_width=False)
-            st.download_button("⬇️ PNG (Bloch)", data=fig_to_png(fig), file_name="bloch.png", mime="image/png")
+            fig = draw_bloch_with_projections(sv, figsize=(15.0, 10.0), title="Esfera de Bloch y proyecciones", color="#d62728")
+            st.pyplot(fig, use_container_width=True)
+            st.download_button("⬇️ Descargar (PNG, 800 dpi)", data=fig_to_png_bytes(fig), file_name="bloch_estado.png", mime="image/png")
             plt.close(fig)
         except Exception as e:
             st.error("No se pudo renderizar la Bloch.")
@@ -96,7 +209,7 @@ def run_app():
 
     # ---------- TAB 2: Puertas ----------
     with tab2:
-        st.subheader("Puertas 1-Qubit: |ψ_in⟩ → |ψ_out⟩ (Qiskit)")
+        st.subheader("Puertas 1-Qubit: |ψ_in⟩ → |ψ_out⟩")
         left, right = st.columns([1,1], gap="large")
 
         with left:
@@ -137,12 +250,12 @@ def run_app():
         with right:
             cols = st.columns(2)
             try:
-                fig_in = plot_bloch_multivector(sv_in); fig_in.set_size_inches(5.0,5.0)
-                cols[0].pyplot(fig_in, use_container_width=True); plt.close(fig_in)
+                fig_in  = draw_bloch_matplotlib(sv_in,  figsize=(5.4,5.4), title="IN",  color="#1f77b4")
+                cols[0].pyplot(fig_in, use_container_width=True);  plt.close(fig_in)
             except Exception as e:
                 cols[0].error("Error Bloch IN"); cols[0].exception(e)
             try:
-                fig_out = plot_bloch_multivector(sv_out); fig_out.set_size_inches(5.0,5.0)
+                fig_out = draw_bloch_matplotlib(sv_out, figsize=(5.4,5.4), title="OUT", color="#d62728")
                 cols[1].pyplot(fig_out, use_container_width=True); plt.close(fig_out)
             except Exception as e:
                 cols[1].error("Error Bloch OUT"); cols[1].exception(e)
@@ -262,13 +375,17 @@ def run_app():
                         qc.h(j)
                     qc.measure(range(n_count), range(n_count))
 
-                # Diagrama (mpl)
+                # Diagrama (mpl si disponible, si no ASCII)
                 try:
-                    figC = circuit_drawer(qc, output="mpl", style={'name':'mpl'})
-                    figC.set_size_inches(9, 3.2)
-                    right.pyplot(figC, use_container_width=True)
-                    right.download_button("⬇️ Diagrama (PNG)", data=fig_to_png(figC), file_name="circuit.png", mime="image/png")
-                    plt.close(figC)
+                    if _HAS_PYLATEXENC:
+                        figC = circuit_drawer(qc, output="mpl", style={'name':'mpl'})
+                        figC.set_size_inches(9, 3.2)
+                        right.pyplot(figC, use_container_width=True)
+                        right.download_button("⬇️ Diagrama (PNG)", data=fig_to_png_bytes(figC), file_name="circuit.png", mime="image/png")
+                        plt.close(figC)
+                    else:
+                        right.info("Mostrando diagrama en texto (instala 'pylatexenc' para gráficos).")
+                        right.code(str(qc.draw(output='text')), language="text")
                 except Exception as e:
                     right.warning("No se pudo dibujar el circuito.")
                     right.exception(e)
@@ -280,7 +397,7 @@ def run_app():
                 figH = plot_histogram(counts)
                 figH.set_size_inches(8.0, 3.0)
                 right.pyplot(figH, use_container_width=True)
-                right.download_button("⬇️ Histograma (PNG)", data=fig_to_png(figH), file_name="hist.png", mime="image/png")
+                right.download_button("⬇️ Histograma (PNG)", data=fig_to_png_bytes(figH), file_name="hist.png", mime="image/png")
                 plt.close(figH)
 
             except Exception as e:
@@ -306,11 +423,15 @@ qc.h(0); qc.cx(0,1); qc.cx(0,2); qc.measure(range(3),range(3))
 
                 # Diagrama
                 try:
-                    figC = circuit_drawer(qc, output="mpl", style={'name':'mpl'})
-                    figC.set_size_inches(9, 3.2)
-                    st.pyplot(figC, use_container_width=True)
-                    st.download_button("⬇️ Diagrama (PNG)", data=fig_to_png(figC), file_name="circuit_exec.png", mime="image/png")
-                    plt.close(figC)
+                    if _HAS_PYLATEXENC:
+                        figC = circuit_drawer(qc, output="mpl", style={'name':'mpl'})
+                        figC.set_size_inches(9, 3.2)
+                        st.pyplot(figC, use_container_width=True)
+                        st.download_button("⬇️ Diagrama (PNG)", data=fig_to_png_bytes(figC), file_name="circuit_exec.png", mime="image/png")
+                        plt.close(figC)
+                    else:
+                        st.info("Mostrando diagrama en texto (instala 'pylatexenc' para gráficos).")
+                        st.code(str(qc.draw(output='text')), language="text")
                 except Exception as e:
                     st.warning("No se pudo dibujar el circuito.")
                     st.exception(e)
@@ -330,9 +451,16 @@ qc.h(0); qc.cx(0,1); qc.cx(0,2); qc.measure(range(3),range(3))
                     figH = plot_histogram(counts)
                     figH.set_size_inches(8.0, 3.0)
                     st.pyplot(figH, use_container_width=True)
-                    st.download_button("⬇️ Histograma (PNG)", data=fig_to_png(figH), file_name="hist_exec.png", mime="image/png")
+                    st.download_button("⬇️ Histograma (PNG)", data=fig_to_png_bytes(figH), file_name="hist_exec.png", mime="image/png")
                     plt.close(figH)
 
             except Exception as e:
                 st.error("Error al ejecutar tu código.")
                 st.exception(e)
+
+
+# Ejecuta al importar (para tu secure_app.py) y también como script directo
+run_app()
+
+if __name__ == "__main__":
+    run_app()

@@ -1,1 +1,2 @@
-web: streamlit run secure_app.py --server.port=$PORT --server.address=0.0.0.0 --server.headless=true
+web: streamlit run secure_app.py --server.port $PORT --server.address 0.0.0.0 --server.headless=true --server.enableXsrfProtection=false
+

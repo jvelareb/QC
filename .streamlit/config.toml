@@ -1,7 +1,12 @@
 [server]
-address = "0.0.0.0"
 headless = true
-enableXsrfProtection = true
+enableCORS = true
+enableXsrfProtection = false
 
-[browser]
-gatherUsageStats = false
+[theme]
+base="light"
+primaryColor=#3b82f6"
+backgroundColor=#ffffff"
+secondaryBackgroundColor=#f6f7fb"
+textColor=#111827"
+
