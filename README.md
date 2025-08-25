@@ -1,17 +1,20 @@
-# Quantum Toolkit (Secure on Railway)
+# QC Qiskit Minimal (Streamlit + Railway)
 
-App Streamlit con login (user/admin). 
-- Rol `user`: entra con usuario/contraseña y usa SERVICE_OPENAI_API_KEY.
-- Rol `admin`: además requiere introducir su propia OpenAI API key (o una que coincida con ADMIN_API_KEY si la defines).
+## Variables de entorno (Railway → Variables)
+- USER_USERNAME
+- USER_PASSWORD_SHA256
+- ADMIN_USERNAME
+- ADMIN_PASSWORD_SHA256
+- ADMIN_API_KEY  (opcional)
 
-## Ejecutar local
-python -m venv .venv
-. .venv/Scripts/activate   # Windows
-pip install -r requirements.txt
-set SERVICE_OPENAI_API_KEY=sk-XXXX...    # Windows (o export en Linux/Mac)
-set USER_USERNAME=user
-set USER_PASSWORD_SHA256=<hash>
-streamlit run secure_app.py
+### SHA-256 (PowerShell)
+$pwd = Read-Host "Contraseña"
+$bytes = [Text.Encoding]::UTF8.GetBytes($pwd)
+$hash  = [Security.Cryptography.SHA256]::Create().ComputeHash($bytes)
+-join ($hash | ForEach-Object { $_.ToString("x2") })
 
-## Producción (Railway)
-Start command en Procfile. Añade variables de entorno indicadas en la guía del repo.
+### Despliegue
+1) git init && git add . && git commit -m "init qiskit"
+2) Sube a GitHub
+3) Railway → New Project → Deploy from GitHub
+4) Añade variables y Deploy

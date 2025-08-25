@@ -1,20 +1,5 @@
-# Python
 __pycache__/
-*.py[cod]
-*.egg-info/
-
-# Streamlit
-.streamlit/secrets.toml
-
-# OS
+.env
+*.pyc
 .DS_Store
-Thumbs.db
-
-# Venv
-.venv/
-venv/
-env/
-
-# Cache
-.cache/
-
+.streamlit/secrets.toml

@@ -1,8 +1,5 @@
-streamlit>=1.36
-numpy
-matplotlib
-plotly
-qiskit>=0.45
-qiskit-aer
-qiskit-ibm-runtime
-
+streamlit==1.36.0
+matplotlib==3.8.4
+numpy==1.26.4
+qiskit==1.1.1
+qiskit-aer==0.14.2
