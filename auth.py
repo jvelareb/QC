@@ -1,31 +1,33 @@
-import streamlit as st
-import hashlib
 import os
-
+import hashlib
+import streamlit as st
 def _sha(s: str) -> str:
     return hashlib.sha256((s or "").encode("utf-8")).hexdigest()
+def _env(name: str, default: str = "") -> str:
+    return (os.getenv(name) or default).strip()
 
-def _env(name: str, default: str) -> str:
-    return (os.getenv(name, default) or "").strip()
+def check_plain(user: str, pwd: str, env_user: str, env_pass: str) -> bool:
+    return (user or "").strip() == _env(env_user) and (pwd or "") == _env(env_pass)
 
-# Usuarios desde Variables (Settings → Variables / Secrets)
-USERS = {
-    _env("APP_USER", "user"): _sha(_env("APP_PASS", "1234")),
-    _env("APP_ADMIN", "admin"): _sha(_env("APP_ADMIN_PASS", "admin123")),
-}
+def login_box():
+    st.sidebar.header("🔒 Acceso")
+    role = st.sidebar.radio("Rol", ["user", "admin"], horizontal=True)
+    u = st.sidebar.text_input("Usuario", key="lg_user")
+    p = st.sidebar.text_input("Contraseña", type="password", key="lg_pass")
 
-def login() -> bool:
-    if st.session_state.get("auth_ok"):
-        return True
+    if st.sidebar.button("Entrar", use_container_width=True):
+        if role == "user":
+            ok = check_plain(u, p, "APP_USER", "APP_PASS")
+            if ok:
+                st.session_state["auth_role"] = "user"
+            else:
+                st.sidebar.error("Credenciales de usuario no válidas.")
+        else:
+            ok = check_plain(u, p, "APP_ADMIN", "APP_ADMIN_PASS")
+            if ok:
+                st.session_state["auth_role"] = "admin"
+            else:
+                st.sidebar.error("Credenciales de admin no válidas.")
 
-    with st.sidebar:
-        st.header("🔒 Login")
-        u = st.text_input("Usuario", key="login_user")
-        p = st.text_input("Contraseña", type="password", key="login_pass")
-        if st.button("Entrar", type="primary", use_container_width=True):
-            if u in USERS and USERS[u] == _sha(p):
-                st.session_state["auth_ok"] = True
-                st.success("✅ Login correcto")
-                return True
-            st.error("❌ Usuario o contraseña incorrectos")
-    return False
+    return st.session_state.get("auth_role")
+
