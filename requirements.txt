@@ -1,11 +1,10 @@
-streamlit==1.36.0
-numpy
-matplotlib
-plotly
-qiskit
-qiskit-aer
-pylatexenc
-
+streamlit==1.37.1
+numpy==1.26.4
+matplotlib==3.9.2
+qiskit==1.1.1
+qiskit_aer==0.14.2
+plotly==5.23.0
+pylatexenc==2.10
 
 
 
