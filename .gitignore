@@ -1,0 +1,66 @@
+# .gitignore — Repositorio de Computación Cuántica
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+.mypy_cache/
+.pytest_cache/
+
+# Entornos virtuales
+.venv/
+venv/
+ENV/
+env/
+
+# Conda
+.conda/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# JupyterLab
+.jupyter/
+jupyter_config.py
+
+# Datos y salidas
+assets/figures/*.png
+assets/figures/*.pdf
+assets/figures/*.svg
+*.npy
+*.npz
+*.h5
+*.hdf5
+
+# Logs
+*.log
+*.out
+logs/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Qiskit / IBM Quantum
+qiskit_credentials.json
+.qiskit/

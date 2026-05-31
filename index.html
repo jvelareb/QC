@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Computación Cuántica — Índice del Repositorio</title>
+  <meta name="description" content="Repositorio de código, visualizaciones y simulaciones del libro Computación Cuántica: Fundamentos, Algoritmos y Aplicaciones." />
+
+  <!-- ── CONFIGURA TU REPOSITORIO AQUÍ ─────────────────────────────────── -->
+  <script>
+    const GITHUB_USER = "jvelareb";
+    const GITHUB_REPO = "QC";
+    const GITHUB_BRANCH = "main";
+  </script>
+  <!-- ──────────────────────────────────────────────────────────────────── -->
+
+  <style>
+    /* ── VARIABLES ── */
+    :root {
+      --bg:        #0b0d1a;
+      --surface:   #13172b;
+      --card:      #1a1f38;
+      --border:    #2a3060;
+      --accent:    #7c3aed;
+      --accent2:   #06b6d4;
+      --accent3:   #f59e0b;
+      --text:      #e2e8f0;
+      --muted:     #8892b0;
+      --radius:    12px;
+      --shadow:    0 4px 24px rgba(0,0,0,.45);
+    }
+
+    /* ── RESET & BASE ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+    a { color: var(--accent2); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    code {
+      background: rgba(124,58,237,.15);
+      border: 1px solid rgba(124,58,237,.3);
+      border-radius: 4px;
+      padding: 2px 6px;
+      font-family: 'Cascadia Code', 'Fira Code', monospace;
+      font-size: .875em;
+      color: #a78bfa;
+    }
+    pre {
+      background: #0d1117;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.2rem 1.4rem;
+      overflow-x: auto;
+      font-family: 'Cascadia Code', 'Fira Code', monospace;
+      font-size: .85rem;
+      color: #cdd9f5;
+    }
+    pre code { background: none; border: none; padding: 0; color: inherit; font-size: inherit; }
+
+    /* ── LAYOUT ── */
+    .container { max-width: 1100px; margin: 0 auto; padding: 0 1.5rem; }
+    section { padding: 3rem 0; }
+
+    /* ── HEADER ── */
+    header {
+      background: linear-gradient(135deg, #0d0f22 0%, #1a0a3a 50%, #0a1a35 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 3.5rem 0 2.5rem;
+      position: relative;
+      overflow: hidden;
+    }
+    header::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse at 20% 50%, rgba(124,58,237,.12) 0%, transparent 60%),
+                  radial-gradient(ellipse at 80% 20%, rgba(6,182,212,.08) 0%, transparent 50%);
+      pointer-events: none;
+    }
+    .header-inner { position: relative; z-index: 1; }
+    .header-title {
+      font-size: clamp(1.8rem, 4vw, 2.8rem);
+      font-weight: 800;
+      letter-spacing: -.02em;
+      background: linear-gradient(90deg, #a78bfa, #38bdf8, #fbbf24);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: .5rem;
+    }
+    .header-subtitle {
+      color: var(--muted);
+      font-size: 1.05rem;
+      margin-bottom: 1.5rem;
+    }
+    .badges { display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: 1.8rem; }
+    .badge {
+      display: inline-flex; align-items: center; gap: .35rem;
+      background: rgba(255,255,255,.06);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: .25rem .75rem;
+      font-size: .78rem;
+      color: var(--muted);
+      font-weight: 500;
+    }
+    .badge span.dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+    }
+    .stat-row { display: flex; flex-wrap: wrap; gap: 1.2rem; }
+    .stat {
+      background: rgba(255,255,255,.04);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: .75rem 1.25rem;
+      text-align: center;
+    }
+    .stat-num { font-size: 1.6rem; font-weight: 800; color: var(--accent2); }
+    .stat-label { font-size: .72rem; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+
+    /* ── NAV ── */
+    nav {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      position: sticky; top: 0; z-index: 100;
+    }
+    .nav-inner {
+      display: flex; align-items: center; gap: 1.5rem;
+      overflow-x: auto; padding: .7rem 0;
+      scrollbar-width: none;
+    }
+    .nav-inner::-webkit-scrollbar { display: none; }
+    .nav-link {
+      white-space: nowrap;
+      color: var(--muted);
+      font-size: .88rem;
+      font-weight: 500;
+      padding: .3rem .5rem;
+      border-radius: 6px;
+      transition: color .2s, background .2s;
+    }
+    .nav-link:hover { color: var(--text); background: rgba(255,255,255,.05); text-decoration: none; }
+
+    /* ── SECTION TITLES ── */
+    .section-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: .4rem;
+      display: flex; align-items: center; gap: .6rem;
+    }
+    .section-title .icon { font-size: 1.3rem; }
+    .section-desc { color: var(--muted); font-size: .95rem; margin-bottom: 2rem; }
+
+    /* ── CHAPTER CARDS ── */
+    .chapters { display: flex; flex-direction: column; gap: 2rem; }
+    .chapter {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      transition: border-color .2s, box-shadow .2s;
+    }
+    .chapter:hover { border-color: var(--accent); box-shadow: var(--shadow); }
+
+    .chapter-header {
+      display: flex; align-items: flex-start; gap: 1rem;
+      padding: 1.25rem 1.5rem;
+      background: rgba(124,58,237,.06);
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      user-select: none;
+    }
+    .ch-num {
+      flex-shrink: 0;
+      width: 2.4rem; height: 2.4rem;
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800; font-size: .85rem;
+      color: #fff;
+    }
+    .ch-info { flex: 1; min-width: 0; }
+    .ch-title { font-size: 1.05rem; font-weight: 700; margin-bottom: .2rem; }
+    .ch-tags { display: flex; flex-wrap: wrap; gap: .4rem; }
+    .tag {
+      background: rgba(124,58,237,.15);
+      border: 1px solid rgba(124,58,237,.3);
+      border-radius: 999px;
+      padding: .15rem .55rem;
+      font-size: .7rem;
+      color: #a78bfa;
+    }
+    .ch-toggle { color: var(--muted); font-size: 1.1rem; transition: transform .25s; }
+    .chapter.open .ch-toggle { transform: rotate(180deg); }
+
+    .chapter-body { display: none; padding: 1.2rem 1.5rem; }
+    .chapter.open .chapter-body { display: block; }
+
+    .notebook-list { list-style: none; display: flex; flex-direction: column; gap: .6rem; }
+    .nb-item {
+      display: flex; align-items: center; gap: .75rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: .65rem 1rem;
+      transition: border-color .15s;
+    }
+    .nb-item:hover { border-color: var(--accent2); }
+    .nb-icon { font-size: 1.1rem; flex-shrink: 0; }
+    .nb-info { flex: 1; min-width: 0; }
+    .nb-name { font-size: .93rem; font-weight: 600; color: var(--text); }
+    .nb-desc { font-size: .78rem; color: var(--muted); margin-top: 1px; }
+    .nb-links { display: flex; gap: .5rem; flex-shrink: 0; }
+    .btn-link {
+      display: inline-flex; align-items: center; gap: .25rem;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: .25rem .6rem;
+      font-size: .72rem;
+      font-weight: 600;
+      color: var(--muted);
+      background: rgba(255,255,255,.04);
+      cursor: pointer;
+      transition: border-color .15s, color .15s, background .15s;
+      white-space: nowrap;
+    }
+    .btn-link:hover { text-decoration: none; }
+    .btn-nbv:hover  { border-color: #f97316; color: #f97316; background: rgba(249,115,22,.08); }
+    .btn-colab:hover{ border-color: #f59e0b; color: #f59e0b; background: rgba(245,158,11,.08); }
+    .btn-gh:hover   { border-color: #8892b0; color: var(--text); background: rgba(255,255,255,.06); }
+
+    /* ── SRC MODULES ── */
+    .modules-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 1rem;
+    }
+    .module-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.2rem 1.3rem;
+      transition: border-color .2s, box-shadow .2s;
+    }
+    .module-card:hover { border-color: var(--accent2); box-shadow: var(--shadow); }
+    .module-icon { font-size: 1.6rem; margin-bottom: .6rem; }
+    .module-name { font-weight: 700; font-size: .95rem; margin-bottom: .3rem; }
+    .module-name code { font-size: .82rem; }
+    .module-desc { font-size: .82rem; color: var(--muted); line-height: 1.5; }
+    .module-api { margin-top: .8rem; }
+    .api-item {
+      font-size: .75rem;
+      color: var(--muted);
+      padding: .18rem 0;
+      border-top: 1px solid rgba(255,255,255,.04);
+      font-family: 'Cascadia Code', monospace;
+    }
+    .api-item:first-child { border-top: none; }
+
+    /* ── DOCS ── */
+    .docs-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; }
+    .doc-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.2rem 1.4rem;
+      display: flex; align-items: flex-start; gap: 1rem;
+      transition: border-color .2s;
+    }
+    .doc-card:hover { border-color: var(--accent); }
+    .doc-icon { font-size: 1.8rem; flex-shrink: 0; }
+    .doc-title { font-weight: 700; font-size: .95rem; margin-bottom: .25rem; }
+    .doc-desc  { font-size: .8rem; color: var(--muted); }
+
+    /* ── INSTALL ── */
+    .install-tabs { display: flex; gap: .5rem; margin-bottom: 1rem; }
+    .tab-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: .83rem;
+      font-weight: 600;
+      padding: .35rem .9rem;
+      transition: all .15s;
+    }
+    .tab-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* ── TABLE ── */
+    .chapter-table { width: 100%; border-collapse: collapse; }
+    .chapter-table th, .chapter-table td {
+      text-align: left; padding: .7rem 1rem;
+      border-bottom: 1px solid var(--border);
+      font-size: .88rem;
+    }
+    .chapter-table th { color: var(--muted); font-weight: 600; font-size: .75rem; text-transform: uppercase; letter-spacing: .05em; }
+    .chapter-table tr:hover td { background: rgba(255,255,255,.02); }
+    .chapter-table td:first-child { font-weight: 600; color: var(--accent2); }
+
+    /* ── DIVIDER ── */
+    .divider { border: none; border-top: 1px solid var(--border); margin: 0; }
+
+    /* ── FOOTER ── */
+    footer {
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      padding: 2rem 0;
+      text-align: center;
+      color: var(--muted);
+      font-size: .82rem;
+    }
+    footer a { color: var(--accent2); }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 640px) {
+      .nb-links { flex-direction: column; }
+      .nb-item  { flex-wrap: wrap; }
+      .stat-row { gap: .75rem; }
+      .stat-num { font-size: 1.3rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════ HEADER -->
+<header>
+  <div class="container header-inner">
+    <div class="header-title">⚛ Computación Cuántica</div>
+    <div class="header-subtitle">
+      Repositorio del libro <em>"Computación Cuántica: Fundamentos, Algoritmos y Aplicaciones"</em>
+      &nbsp;·&nbsp; J. Velasco (2025)
+    </div>
+
+    <div class="badges">
+      <span class="badge"><span class="dot" style="background:#3b82f6"></span>Python 3.10+</span>
+      <span class="badge"><span class="dot" style="background:#7c3aed"></span>Qiskit 1.x</span>
+      <span class="badge"><span class="dot" style="background:#f59e0b"></span>Jupyter</span>
+      <span class="badge"><span class="dot" style="background:#22c55e"></span>MIT License</span>
+    </div>
+
+    <div class="stat-row">
+      <div class="stat"><div class="stat-num">8</div><div class="stat-label">Capítulos</div></div>
+      <div class="stat"><div class="stat-num">14</div><div class="stat-label">Notebooks</div></div>
+      <div class="stat"><div class="stat-num">4</div><div class="stat-label">Módulos src/</div></div>
+      <div class="stat"><div class="stat-num">2</div><div class="stat-label">Test suites</div></div>
+    </div>
+  </div>
+</header>
+
+<!-- ═══════════════════════════════════════════════════════════ NAV -->
+<nav>
+  <div class="container">
+    <div class="nav-inner">
+      <a class="nav-link" href="#notebooks">📓 Notebooks</a>
+      <a class="nav-link" href="#tabla">📊 Tabla de contenidos</a>
+      <a class="nav-link" href="#modulos">🔩 Módulos</a>
+      <a class="nav-link" href="#docs">📚 Documentación</a>
+      <a class="nav-link" href="#instalacion">⚙ Instalación</a>
+      <a class="nav-link" href="#h2">🧪 H₂ Lab</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ═══════════════════════════════════════════════════════════ NOTEBOOKS -->
+<section id="notebooks">
+  <div class="container">
+    <div class="section-title"><span class="icon">📓</span> Notebooks por Capítulo</div>
+    <p class="section-desc">
+      Haz clic en cada capítulo para ver sus notebooks. Ábrelos directamente en
+      <strong>nbviewer</strong> (lectura) o <strong>Google Colab</strong> (ejecución interactiva).
+    </p>
+
+    <div class="chapters" id="chaptersContainer"></div>
+  </div>
+</section>
+
+<hr class="divider" />
+
+<!-- ═══════════════════════════════════════════════════════════ TABLA -->
+<section id="tabla">
+  <div class="container">
+    <div class="section-title"><span class="icon">📊</span> Tabla de Contenidos</div>
+    <p class="section-desc">Resumen rápido de los conceptos cubiertos en cada capítulo.</p>
+
+    <div style="overflow-x:auto; background:var(--card); border:1px solid var(--border); border-radius:var(--radius);">
+      <table class="chapter-table">
+        <thead>
+          <tr>
+            <th>Cap.</th>
+            <th>Tema</th>
+            <th>Algoritmos / Conceptos</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<hr class="divider" />
+
+<!-- ═══════════════════════════════════════════════════════════ MÓDULOS -->
+<section id="modulos">
+  <div class="container">
+    <div class="section-title"><span class="icon">🔩</span> Módulos <code>src/</code></div>
+    <p class="section-desc">Bibliotecas reutilizables de álgebra cuántica y visualización.</p>
+
+    <div class="modules-grid">
+
+      <div class="module-card">
+        <div class="module-icon">🚪</div>
+        <div class="module-name"><code>quantum_gates.py</code></div>
+        <div class="module-desc">Puertas cuánticas como matrices NumPy (complex128). Incluye puertas de 1 y 2 qubits.</div>
+        <div class="module-api">
+          <div class="api-item">Gates.H, .X, .Y, .Z, .S, .T</div>
+          <div class="api-item">Gates.Rx(θ), .Ry(θ), .Rz(θ), .P(φ)</div>
+          <div class="api-item">Gates.CNOT, .CZ, .SWAP</div>
+          <div class="api-item">Gates.tensor(*gates)</div>
+        </div>
+      </div>
+
+      <div class="module-card">
+        <div class="module-icon">∫</div>
+        <div class="module-name"><code>quantum_math.py</code></div>
+        <div class="module-desc">Álgebra lineal cuántica: estados, matrices de densidad, entropía de Von Neumann, fidelidad.</div>
+        <div class="module-api">
+          <div class="api-item">QuantumMath.ket0(), .ket_plus()</div>
+          <div class="api-item">.bloch_vector(state)</div>
+          <div class="api-item">.density_matrix(state)</div>
+          <div class="api-item">.von_neumann_entropy(rho)</div>
+        </div>
+      </div>
+
+      <div class="module-card">
+        <div class="module-icon">🌐</div>
+        <div class="module-name"><code>bloch_simulator.py</code></div>
+        <div class="module-desc">Simulador interactivo de esfera de Bloch con trayectorias 3D y widgets Jupyter.</div>
+        <div class="module-api">
+          <div class="api-item">BlochSimulator(initial_state)</div>
+          <div class="api-item">.apply_gate(gate)</div>
+          <div class="api-item">.plot_3d()</div>
+          <div class="api-item">.apply_sequence([gates])</div>
+        </div>
+      </div>
+
+      <div class="module-card">
+        <div class="module-icon">📊</div>
+        <div class="module-name"><code>visualization.py</code></div>
+        <div class="module-desc">Visualizaciones unificadas con estilo dark academic. Histogramas, Bloch sphere, heatmaps.</div>
+        <div class="module-api">
+          <div class="api-item">QuantumVisualization.histogram(counts)</div>
+          <div class="api-item">.bloch_sphere(state)</div>
+          <div class="api-item">.gate_heatmap(U)</div>
+          <div class="api-item">.statevector(sv)</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<hr class="divider" />
+
+<!-- ═══════════════════════════════════════════════════════════ DOCS -->
+<section id="docs">
+  <div class="container">
+    <div class="section-title"><span class="icon">📚</span> Documentación</div>
+    <p class="section-desc">Guías de instalación, arquitectura y referencia.</p>
+
+    <div class="docs-grid" id="docsGrid"></div>
+  </div>
+</section>
+
+<hr class="divider" />
+
+<!-- ═══════════════════════════════════════════════════════════ INSTALACIÓN -->
+<section id="instalacion">
+  <div class="container">
+    <div class="section-title"><span class="icon">⚙</span> Instalación Rápida</div>
+    <p class="section-desc">Elige tu gestor de entornos preferido.</p>
+
+    <div class="install-tabs">
+      <button class="tab-btn active" onclick="switchTab('conda')">Conda</button>
+      <button class="tab-btn" onclick="switchTab('pip')">pip</button>
+      <button class="tab-btn" onclick="switchTab('h2')">Entorno H₂</button>
+    </div>
+
+    <div class="tab-content active" id="tab-conda">
+<pre><code># Crear entorno y activar
+conda env create -f environment.yml
+conda activate quantum-book
+
+# Iniciar JupyterLab
+jupyter lab</code></pre>
+    </div>
+
+    <div class="tab-content" id="tab-pip">
+<pre><code># Instalar dependencias
+pip install -r requirements.txt
+
+# Iniciar JupyterLab
+jupyter lab</code></pre>
+    </div>
+
+    <div class="tab-content" id="tab-h2">
+<pre><code># Ir al directorio H2
+cd H2
+
+# Crear entorno virtual dedicado
+python -m venv .venv_h2
+.venv_h2\Scripts\activate   # Windows
+# source .venv_h2/bin/activate  # Linux/Mac
+
+# Configurar entorno
+python setup_h2_env.py
+
+# Abrir notebooks H2
+jupyter lab h2.ipynb</code></pre>
+    </div>
+
+    <div style="margin-top:1.5rem;">
+      <div class="section-title" style="font-size:1.1rem; margin-bottom:.5rem;"><span class="icon">🧪</span> Ejecutar Tests</div>
+<pre><code>pytest tests/ -v</code></pre>
+    </div>
+  </div>
+</section>
+
+<hr class="divider" />
+
+<!-- ═══════════════════════════════════════════════════════════ H2 LAB -->
+<section id="h2">
+  <div class="container">
+    <div class="section-title"><span class="icon">🧪</span> H₂ Lab — Simulación Molecular</div>
+    <p class="section-desc">
+      Directorio especializado con simulaciones cuánticas de la molécula de hidrógeno (H₂),
+      incluyendo curvas de disociación con VQE y circuitos QAOA.
+    </p>
+
+    <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:1rem;">
+
+      <div class="module-card">
+        <div class="module-icon">📓</div>
+        <div class="module-name">h2.ipynb</div>
+        <div class="module-desc">Simulación principal de la molécula H₂. Curva de disociación y energía del estado base.</div>
+      </div>
+
+      <div class="module-card">
+        <div class="module-icon">📓</div>
+        <div class="module-name">qaoa.ipynb</div>
+        <div class="module-desc">QAOA aplicado al problema H₂. Circuitos plegado y lineal para k=6.</div>
+      </div>
+
+      <div class="module-card">
+        <div class="module-icon">📈</div>
+        <div class="module-name">Resultados CSV</div>
+        <div class="module-desc">
+          <code>h2_curve_results.csv</code><br/>
+          <code>solucion_final.csv</code><br/>
+          <code>solucion_generica.csv</code><br/>
+          <code>solucion_k6_robusta.csv</code>
+        </div>
+      </div>
+
+      <div class="module-card">
+        <div class="module-icon">🖼</div>
+        <div class="module-name">Visualizaciones</div>
+        <div class="module-desc">
+          Curva VQE de disociación, convergencia VQE, circuito k6 optimizado, circuito QAOA C6.
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ FOOTER -->
+<footer>
+  <div class="container">
+    <p>
+      ⚛ <strong>Computación Cuántica: Fundamentos, Algoritmos y Aplicaciones</strong> — J. Velasco (2025)
+    </p>
+    <p style="margin-top:.4rem;">
+      Licencia <a href="https://opensource.org/licenses/MIT" target="_blank">MIT</a> · Libre para uso docente y académico
+    </p>
+  </div>
+</footer>
+
+<!-- ═══════════════════════════════════════════════════════════ DATA & LOGIC -->
+<script>
+/* ── DATOS DEL REPOSITORIO ──────────────────────────────────────────── */
+const CHAPTERS = [
+  {
+    num: "01",
+    title: "Qubits y Estados Cuánticos",
+    color: "#7c3aed",
+    tags: ["superposición", "qubit", "Bloch sphere", "medida"],
+    notebooks: [
+      {
+        file: "notebooks/ch01_introduccion/01_qubits_y_estados.ipynb",
+        name: "Qubits y Estados",
+        desc: "Formalismo de qubits, estados de superposición, puertas H, X, Y, Z, medición probabilística."
+      },
+      {
+        file: "notebooks/ch01_introduccion/02_bloch_interactivo.ipynb",
+        name: "Esfera de Bloch Interactiva",
+        desc: "Visualización 3D interactiva con ipywidgets. Aplica puertas y observa la trayectoria del qubit."
+      }
+    ]
+  },
+  {
+    num: "02",
+    title: "Entrelazamiento Cuántico",
+    color: "#0891b2",
+    tags: ["Bell states", "entrelazamiento", "teleportación"],
+    notebooks: [
+      {
+        file: "notebooks/ch02_entrelazamiento/01_bell_states.ipynb",
+        name: "Estados de Bell y Teleportación",
+        desc: "Construcción de los 4 estados de Bell, verificación de correlaciones y protocolo de teleportación cuántica."
+      }
+    ]
+  },
+  {
+    num: "03",
+    title: "Algoritmos con Oráculo",
+    color: "#059669",
+    tags: ["oráculo", "Deutsch-Jozsa", "Bernstein-Vazirani", "Simon"],
+    notebooks: [
+      {
+        file: "notebooks/ch03_algoritmos_clasicos/01_deutsch_jozsa.ipynb",
+        name: "Deutsch-Jozsa",
+        desc: "Distinción entre funciones constantes y balanceadas con una sola consulta al oráculo."
+      },
+      {
+        file: "notebooks/ch03_algoritmos_clasicos/02_bernstein_vazirani.ipynb",
+        name: "Bernstein-Vazirani",
+        desc: "Recuperación del string oculto s con una sola medición cuántica."
+      },
+      {
+        file: "notebooks/ch03_algoritmos_clasicos/03_simon.ipynb",
+        name: "Algoritmo de Simon",
+        desc: "Búsqueda de periodo con ventaja exponencial. Base conceptual del algoritmo de Shor."
+      }
+    ]
+  },
+  {
+    num: "04",
+    title: "Transformada de Fourier Cuántica",
+    color: "#d97706",
+    tags: ["QFT", "estimación de fase", "transformada"],
+    notebooks: [
+      {
+        file: "notebooks/ch04_fourier_cuantica/01_qft.ipynb",
+        name: "QFT — Quantum Fourier Transform",
+        desc: "Implementación de la QFT y verificación contra la matriz analítica. Estimación de fase cuántica (QPE)."
+      }
+    ]
+  },
+  {
+    num: "05",
+    title: "Búsqueda Cuántica",
+    color: "#dc2626",
+    tags: ["Grover", "amplificación de amplitud", "√N"],
+    notebooks: [
+      {
+        file: "notebooks/ch05_busqueda/01_grover.ipynb",
+        name: "Algoritmo de Grover",
+        desc: "Búsqueda cuadráticamente más rápida en bases de datos no estructuradas. Análisis del número óptimo de iteraciones."
+      }
+    ]
+  },
+  {
+    num: "06",
+    title: "Factorización Cuántica",
+    color: "#7c3aed",
+    tags: ["Shor", "factorización", "RSA", "N=15"],
+    notebooks: [
+      {
+        file: "notebooks/ch06_factorizacion/01_shor.ipynb",
+        name: "Algoritmo de Shor",
+        desc: "Factorización de N=15 (caso pedagógico). Reducción a búsqueda de período y paso QFT."
+      }
+    ]
+  },
+  {
+    num: "07",
+    title: "Algoritmos Variacionales (VQE / QAOA)",
+    color: "#0891b2",
+    tags: ["VQE", "QAOA", "variacional", "NISQ", "H₂"],
+    notebooks: [
+      {
+        file: "notebooks/ch07_variacional/01_vqe.ipynb",
+        name: "VQE — Variational Quantum Eigensolver",
+        desc: "VQE para el Hamiltoniano de Heisenberg. Minimización variacional del estado fundamental."
+      },
+      {
+        file: "notebooks/ch07_variacional/02_qaoa.ipynb",
+        name: "QAOA — Quantum Approximate Optimization",
+        desc: "QAOA para el problema MaxCUT en grafos. Optimización combinatoria cuántica."
+      },
+      {
+        file: "notebooks/ch07_variacional/03_vqe_h2.ipynb",
+        name: "VQE para H₂ (PySCF + Qiskit)",
+        desc: "Demostración completa de VQE para la molécula de hidrógeno usando PySCF y Qiskit Nature."
+      }
+    ]
+  },
+  {
+    num: "08",
+    title: "Machine Learning Cuántico",
+    color: "#059669",
+    tags: ["QSVM", "QNN", "feature map", "barren plateau"],
+    notebooks: [
+      {
+        file: "notebooks/ch08_machine_learning/01_qsvm.ipynb",
+        name: "QSVM — Quantum Support Vector Machine",
+        desc: "SVM cuántica con feature maps cuánticos. Separación de clases en espacio de Hilbert."
+      },
+      {
+        file: "notebooks/ch08_machine_learning/02_qnn.ipynb",
+        name: "QNN — Quantum Neural Network",
+        desc: "Red neuronal cuántica parametrizada. Discusión del fenómeno barren plateau."
+      }
+    ]
+  }
+];
+
+const DOCS = [
+  {
+    icon: "🏗",
+    title: "Arquitectura del Repositorio",
+    desc: "Diseño del sistema, guía de extensión con nuevos capítulos y algoritmos, convenciones de código.",
+    file: "docs/arquitectura.md"
+  },
+  {
+    icon: "⚙",
+    title: "Guía de Instalación",
+    desc: "Instrucciones detalladas para Conda y pip, configuración de entornos virtuales, solución de problemas.",
+    file: "docs/guia_instalacion.md"
+  },
+  {
+    icon: "📖",
+    title: "Guía de Usuario",
+    desc: "Cómo usar el repositorio, estructura de notebooks, convenciones de código, cómo contribuir.",
+    file: "GUIA.md"
+  },
+  {
+    icon: "📋",
+    title: "README Principal",
+    desc: "Punto de entrada al repositorio: instalación rápida, tabla de contenidos y referencias del libro.",
+    file: "README.md"
+  }
+];
+
+/* ── URL HELPERS ──────────────────────────────────────────────────── */
+function nbviewerUrl(file) {
+  return `https://nbviewer.org/github/${GITHUB_USER}/${GITHUB_REPO}/blob/${GITHUB_BRANCH}/${file}`;
+}
+function colabUrl(file) {
+  return `https://colab.research.google.com/github/${GITHUB_USER}/${GITHUB_REPO}/blob/${GITHUB_BRANCH}/${file}`;
+}
+function githubUrl(file) {
+  return `https://github.com/${GITHUB_USER}/${GITHUB_REPO}/blob/${GITHUB_BRANCH}/${file}`;
+}
+
+/* ── RENDER CHAPTERS ──────────────────────────────────────────────── */
+function renderChapters() {
+  const container = document.getElementById('chaptersContainer');
+  CHAPTERS.forEach((ch, i) => {
+    const div = document.createElement('div');
+    div.className = 'chapter';
+    if (i === 0) div.classList.add('open');
+
+    const notebookItems = ch.notebooks.map(nb => {
+      const isNb = nb.file.endsWith('.ipynb');
+      const links = isNb ? `
+        <div class="nb-links">
+          <a class="btn-link btn-nbv"  href="${nbviewerUrl(nb.file)}" target="_blank" rel="noopener">🔍 nbviewer</a>
+          <a class="btn-link btn-colab" href="${colabUrl(nb.file)}"  target="_blank" rel="noopener">▶ Colab</a>
+          <a class="btn-link btn-gh"    href="${githubUrl(nb.file)}" target="_blank" rel="noopener">⌥ GitHub</a>
+        </div>` : `
+        <div class="nb-links">
+          <a class="btn-link btn-gh" href="${githubUrl(nb.file)}" target="_blank" rel="noopener">⌥ GitHub</a>
+        </div>`;
+
+      return `
+        <li class="nb-item">
+          <span class="nb-icon">📓</span>
+          <div class="nb-info">
+            <div class="nb-name">${nb.name}</div>
+            <div class="nb-desc">${nb.desc}</div>
+          </div>
+          ${links}
+        </li>`;
+    }).join('');
+
+    const tags = ch.tags.map(t => `<span class="tag">${t}</span>`).join('');
+
+    div.innerHTML = `
+      <div class="chapter-header" onclick="toggleChapter(this)">
+        <div class="ch-num" style="background:${ch.color}">${ch.num}</div>
+        <div class="ch-info">
+          <div class="ch-title">Capítulo ${ch.num} — ${ch.title}</div>
+          <div class="ch-tags">${tags}</div>
+        </div>
+        <span class="ch-toggle">▾</span>
+      </div>
+      <div class="chapter-body">
+        <ul class="notebook-list">${notebookItems}</ul>
+      </div>`;
+
+    container.appendChild(div);
+  });
+}
+
+/* ── RENDER TABLE ─────────────────────────────────────────────────── */
+function renderTable() {
+  const tbody = document.getElementById('tableBody');
+  const rows = [
+    ["1", "Qubits y puertas", "Superposición, medida, H, X, Y, Z, S, T"],
+    ["2", "Entrelazamiento",   "Bell states, teleportación cuántica"],
+    ["3", "Algoritmos oráculo","Deutsch-Jozsa, Bernstein-Vazirani, Simon"],
+    ["4", "Fourier cuántica",  "QFT, estimación de fase (QPE)"],
+    ["5", "Búsqueda",          "Algoritmo de Grover, amplificación de amplitud"],
+    ["6", "Factorización",     "Algoritmo de Shor (N=15)"],
+    ["7", "Variacional",       "VQE, QAOA, VQE para H₂"],
+    ["8", "Machine Learning",  "QSVM (feature maps), QNN, barren plateau"],
+  ];
+  tbody.innerHTML = rows.map(([n, t, c]) =>
+    `<tr><td>Ch.${n}</td><td>${t}</td><td>${c}</td></tr>`
+  ).join('');
+}
+
+/* ── RENDER DOCS ──────────────────────────────────────────────────── */
+function renderDocs() {
+  const grid = document.getElementById('docsGrid');
+  DOCS.forEach(doc => {
+    const a = document.createElement('a');
+    a.href = githubUrl(doc.file);
+    a.target = '_blank';
+    a.rel = 'noopener';
+    a.style.textDecoration = 'none';
+    a.innerHTML = `
+      <div class="doc-card">
+        <div class="doc-icon">${doc.icon}</div>
+        <div>
+          <div class="doc-title">${doc.title}</div>
+          <div class="doc-desc">${doc.desc}</div>
+        </div>
+      </div>`;
+    grid.appendChild(a);
+  });
+}
+
+/* ── INTERACTIONS ─────────────────────────────────────────────────── */
+function toggleChapter(header) {
+  const chapter = header.closest('.chapter');
+  chapter.classList.toggle('open');
+}
+
+function switchTab(name) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+  document.getElementById(`tab-${name}`).classList.add('active');
+  event.target.classList.add('active');
+}
+
+/* ── INIT ── */
+renderChapters();
+renderTable();
+renderDocs();
+</script>
+
+</body>
+</html>
