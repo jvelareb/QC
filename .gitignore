@@ -64,3 +64,4 @@ Desktop.ini
 # Qiskit / IBM Quantum
 qiskit_credentials.json
 .qiskit/
+H2/
