@@ -1,15 +1,15 @@
-# Computación Cuántica — Repositorio del Libro
+# Quantum Computing — Book Repository
 
 [![Python](https://img.shields.io/badge/Python-3.10%2B-blue?logo=python)](https://www.python.org/)
 [![Qiskit](https://img.shields.io/badge/Qiskit-1.x-6929C4?logo=ibm)](https://qiskit.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Jupyter](https://img.shields.io/badge/Jupyter-Notebook-orange?logo=jupyter)](https://jupyter.org/)
 
-Repositorio de código, visualizaciones y simulaciones interactivas que acompaña al libro **"Computación Cuántica: Fundamentos, Algoritmos y Aplicaciones"**.
+Code repository, visualizations, and interactive simulations accompanying the book **"Quantum Computing: Foundations, Algorithms, and Applications"**.
 
 ---
 
-## Estructura del Repositorio
+## Repository Structure
 
 ```
 quantum-book/
@@ -18,13 +18,13 @@ quantum-book/
 ├── environment.yml
 ├── setup.py
 │
-├── src/                        # Módulos reutilizables
+├── src/                        # Reusable modules
 │   ├── __init__.py
-│   ├── quantum_gates.py        # Puertas cuánticas básicas
-│   ├── quantum_circuits.py     # Construcción de circuitos
-│   ├── quantum_math.py         # Álgebra lineal y formalismo cuántico
-│   ├── visualization.py        # Funciones de visualización unificadas
-│   └── bloch_simulator.py      # Simulador de esfera de Bloch
+│   ├── quantum_gates.py        # Basic quantum gates
+│   ├── quantum_circuits.py     # Circuit construction
+│   ├── quantum_math.py         # Linear algebra and quantum formalism
+│   ├── visualization.py        # Unified visualization functions
+│   └── bloch_simulator.py      # Bloch sphere simulator
 │
 ├── notebooks/
 │   ├── ch01_introduccion/
@@ -52,15 +52,15 @@ quantum-book/
 │
 ├── simulators/
 │   ├── bloch_sphere/
-│   │   ├── app.py              # Aplicación Streamlit interactiva
-│   │   └── bloch_widget.py     # Widget ipywidgets para notebooks
+│   │   ├── app.py              # Interactive Streamlit application
+│   │   └── bloch_widget.py     # ipywidgets widget for notebooks
 │   └── circuit_builder/
-│       └── app.py              # Constructor visual de circuitos
+│       └── app.py              # Visual circuit builder
 │
 ├── assets/
-│   ├── figures/                # Figuras exportadas
+│   ├── figures/                # Exported figures
 │   └── styles/
-│       └── notebook_style.css  # Estilo CSS uniforme para notebooks
+│       └── notebook_style.css  # Uniform CSS style for notebooks
 │
 ├── tests/
 │   ├── test_gates.py
@@ -75,9 +75,9 @@ quantum-book/
 
 ---
 
-## Instalación Rápida
+## Quick Installation
 
-### Con Conda (recomendado)
+### With Conda (recommended)
 
 ```bash
 conda env create -f environment.yml
@@ -85,7 +85,7 @@ conda activate quantum-book
 jupyter lab
 ```
 
-### Con pip
+### With pip
 
 ```bash
 pip install -r requirements.txt
@@ -94,22 +94,22 @@ jupyter lab
 
 ---
 
-## Contenido por Capítulos
+## Content by Chapter
 
-| Capítulo | Tema | Algoritmos / Conceptos |
+| Chapter | Topic | Algorithms / Concepts |
 |---|---|---|
-| 1 | Qubits y puertas | Superposición, medida, H, X, Y, Z, S, T |
-| 2 | Entrelazamiento | Bell states, teleportación cuántica |
-| 3 | Algoritmos oráculo | Deutsch-Jozsa, Bernstein-Vazirani, Simon |
-| 4 | Fourier cuántica | QFT, estimación de fase |
-| 5 | Búsqueda | Algoritmo de Grover |
-| 6 | Factorización | Algoritmo de Shor |
-| 7 | Variacional | VQE, QAOA |
+| 1 | Qubits and gates | Superposition, measurement, H, X, Y, Z, S, T |
+| 2 | Entanglement | Bell states, quantum teleportation |
+| 3 | Oracle algorithms | Deutsch-Jozsa, Bernstein-Vazirani, Simon |
+| 4 | Quantum Fourier | QFT, phase estimation |
+| 5 | Search | Grover's algorithm |
+| 6 | Factorization | Shor's algorithm |
+| 7 | Variational | VQE, QAOA |
 | 8 | Machine Learning | QSVM, QNN |
 
 ---
 
-## Simulador Interactivo de Esfera de Bloch
+## Interactive Bloch Sphere Simulator
 
 ```bash
 cd simulators/bloch_sphere
@@ -118,18 +118,18 @@ streamlit run app.py
 
 ---
 
-## Contribuciones y Extensiones
+## Contributions and Extensions
 
-Consulta [`docs/arquitectura.md`](docs/arquitectura.md) para la guía de extensión del repositorio con nuevos capítulos, algoritmos o simuladores.
-
----
-
-## Licencia
-
-MIT License — libre para uso docente y académico.
+See [`docs/arquitectura.md`](docs/arquitectura.md) for the repository extension guide covering new chapters, algorithms, or simulators.
 
 ---
 
-## Referencia del Libro
+## License
 
-> Velasco, J. (2025). *Computación Cuántica: Fundamentos, Algoritmos y Aplicaciones*. [Editorial].
+MIT License — free for educational and academic use.
+
+---
+
+## Book Reference
+
+> Velasco, J. (2025). *Quantum Computing: Foundations, Algorithms, and Applications*. [Publisher].

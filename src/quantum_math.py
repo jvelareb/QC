@@ -1,18 +1,18 @@
 """
 quantum_math.py
 ===============
-Funciones de álgebra lineal y formalismo cuántico utilizadas como
-utilidades matemáticas transversales a todo el libro.
+Linear algebra functions and quantum formalism used as
+mathematical utilities shared across the entire book.
 
-Incluye:
-  - Construcción y verificación de estados cuánticos
-  - Cálculo de valores esperados y probabilidades
-  - Descomposición espectral y fidelidad
-  - Representación matricial de operadores
-  - QFT analítica (referencia para comparación)
+Includes:
+  - Construction and verification of quantum states
+  - Calculation of expected values and probabilities
+  - Spectral decomposition and fidelity
+  - Matrix representation of operators
+  - Analytical QFT (reference for comparison)
 
-Autor: J. Velasco
-Versión: 1.0.0
+Author: J. Velasco
+Version: 1.0.0
 """
 
 import numpy as np
@@ -21,68 +21,68 @@ from numpy.linalg import eigh, svd, norm
 
 
 # ---------------------------------------------------------------------------
-# Clase principal
+# Main class
 # ---------------------------------------------------------------------------
 class QuantumMath:
-    """Colección de herramientas matemáticas cuánticas."""
+    """Collection of quantum mathematical tools."""
 
     # ------------------------------------------------------------------
-    # Estados básicos
+    # Basic states
     # ------------------------------------------------------------------
     @staticmethod
     def ket0() -> np.ndarray:
-        """Devuelve el estado base |0>."""
+        """Returns the basis state |0>."""
         return np.array([1, 0], dtype=complex)
 
     @staticmethod
     def ket1() -> np.ndarray:
-        """Devuelve el estado base |1>."""
+        """Returns the basis state |1>."""
         return np.array([0, 1], dtype=complex)
 
     @staticmethod
     def ket_plus() -> np.ndarray:
-        """Devuelve (|0> + |1>) / sqrt(2)."""
+        """Returns (|0> + |1>) / sqrt(2)."""
         return np.array([1, 1], dtype=complex) / np.sqrt(2)
 
     @staticmethod
     def ket_minus() -> np.ndarray:
-        """Devuelve (|0> - |1>) / sqrt(2)."""
+        """Returns (|0> - |1>) / sqrt(2)."""
         return np.array([1, -1], dtype=complex) / np.sqrt(2)
 
     @staticmethod
     def computational_basis(n: int) -> List[np.ndarray]:
-        """Genera la base computacional para un sistema de n qubits.
+        """Generates the computational basis for an n-qubit system.
 
         Parameters
         ----------
         n : int
-            Número de qubits.
+            Number of qubits.
 
         Returns
         -------
         List[np.ndarray]
-            Lista de 2^n vectores de estado de la base computacional,
-            en orden lexicográfico |00…0>, |00…1>, …, |11…1>.
+            List of 2^n basis state vectors from the computational basis,
+            in lexicographic order |00...0>, |00...1>, ..., |11...1>.
         """
         dim = 2 ** n
         return [np.eye(dim, dtype=complex)[k] for k in range(dim)]
 
     # ------------------------------------------------------------------
-    # Operaciones sobre estados
+    # State operations
     # ------------------------------------------------------------------
     @staticmethod
     def tensor_product(*states: np.ndarray) -> np.ndarray:
-        """Producto tensorial de varios estados (|ψ_1> ⊗ |ψ_2> ⊗ …).
+        """Tensor product of multiple states (|psi_1> tensor |psi_2> tensor ...).
 
         Parameters
         ----------
         *states : np.ndarray
-            Vectores de estado individuales.
+            Individual state vectors.
 
         Returns
         -------
         np.ndarray
-            Estado compuesto.
+            Composite state.
         """
         result = states[0]
         for s in states[1:]:
@@ -91,132 +91,132 @@ class QuantumMath:
 
     @staticmethod
     def normalize(state: np.ndarray) -> np.ndarray:
-        """Normaliza un vector de estado.
+        """Normalizes a state vector.
 
         Parameters
         ----------
         state : np.ndarray
-            Vector de estado (puede no estar normalizado).
+            State vector (may not be normalized).
 
         Returns
         -------
         np.ndarray
-            Vector normalizado.
+            Normalized vector.
 
         Raises
         ------
         ValueError
-            Si el vector tiene norma cero.
+            If the vector has zero norm.
         """
         n = norm(state)
         if n < 1e-14:
-            raise ValueError("El estado tiene norma cero y no puede normalizarse.")
+            raise ValueError("The state has zero norm and cannot be normalized.")
         return state / n
 
     @staticmethod
     def inner_product(bra: np.ndarray, ket: np.ndarray) -> complex:
-        """Calcula el producto interior <bra|ket>.
+        """Calculates the inner product <bra|ket>.
 
         Parameters
         ----------
         bra : np.ndarray
-            Vector de estado (se conjuga internamente).
+            State vector (conjugated internally).
         ket : np.ndarray
-            Vector de estado.
+            State vector.
 
         Returns
         -------
         complex
-            Número complejo <bra|ket>.
+            Complex number <bra|ket>.
         """
         return np.dot(bra.conj(), ket)
 
     @staticmethod
     def outer_product(ket: np.ndarray, bra: np.ndarray) -> np.ndarray:
-        """Calcula el operador |ket><bra|.
+        """Calculates the operator |ket><bra|.
 
         Parameters
         ----------
         ket : np.ndarray
-            Vector columna.
+            Column vector.
         bra : np.ndarray
-            Vector columna (se conjuga y transpone).
+            Column vector (conjugated and transposed).
 
         Returns
         -------
         np.ndarray
-            Matriz densidad o proyector.
+            Density matrix or projector.
         """
         return np.outer(ket, bra.conj())
 
     @staticmethod
     def density_matrix(state: np.ndarray) -> np.ndarray:
-        """Calcula la matriz densidad rho = |ψ><ψ|.
+        """Calculates the density matrix rho = |psi><psi|.
 
         Parameters
         ----------
         state : np.ndarray
-            Estado puro normalizado.
+            Normalized pure state.
 
         Returns
         -------
         np.ndarray
-            Matriz densidad (hermítica, semidefinida positiva, traza 1).
+            Density matrix (Hermitian, positive semidefinite, trace 1).
         """
         return np.outer(state, state.conj())
 
     # ------------------------------------------------------------------
-    # Medida y probabilidades
+    # Measurement and probabilities
     # ------------------------------------------------------------------
     @staticmethod
     def probabilities(state: np.ndarray) -> np.ndarray:
-        """Calcula el vector de probabilidades de medida en la base computacional.
+        """Calculates the measurement probability vector in the computational basis.
 
         Parameters
         ----------
         state : np.ndarray
-            Vector de estado normalizado.
+            Normalized state vector.
 
         Returns
         -------
         np.ndarray
-            Vector de probabilidades (suma = 1).
+            Probability vector (sum = 1).
         """
         return np.abs(state) ** 2
 
     @staticmethod
     def expectation_value(state: np.ndarray, operator: np.ndarray) -> float:
-        """Calcula el valor esperado <ψ|O|ψ>.
+        """Calculates the expected value <psi|O|psi>.
 
         Parameters
         ----------
         state : np.ndarray
-            Vector de estado normalizado.
+            Normalized state vector.
         operator : np.ndarray
-            Operador hermítico.
+            Hermitian operator.
 
         Returns
         -------
         float
-            Valor esperado (parte real, ya que el operador es hermítico).
+            Expected value (real part, since the operator is Hermitian).
         """
         return np.real(state.conj() @ operator @ state)
 
     @staticmethod
     def measure(state: np.ndarray, n_shots: int = 1024) -> dict:
-        """Simula medidas sobre un estado cuántico.
+        """Simulates measurements on a quantum state.
 
         Parameters
         ----------
         state : np.ndarray
-            Vector de estado normalizado de n qubits.
+            Normalized state vector of n qubits.
         n_shots : int
-            Número de mediciones a realizar.
+            Number of measurements to perform.
 
         Returns
         -------
         dict
-            Diccionario {bitstring: conteo}.
+            Dictionary {bitstring: count}.
         """
         probs = np.abs(state) ** 2
         n_qubits = int(np.log2(len(state)))
@@ -228,37 +228,37 @@ class QuantumMath:
         return dict(sorted(counts.items()))
 
     # ------------------------------------------------------------------
-    # Métricas de estado
+    # State metrics
     # ------------------------------------------------------------------
     @staticmethod
     def fidelity(state1: np.ndarray, state2: np.ndarray) -> float:
-        """Calcula la fidelidad F = |<ψ1|ψ2>|^2 entre dos estados puros.
+        """Calculates the fidelity F = |<psi1|psi2>|^2 between two pure states.
 
         Parameters
         ----------
         state1, state2 : np.ndarray
-            Vectores de estado normalizados.
+            Normalized state vectors.
 
         Returns
         -------
         float
-            Fidelidad en [0, 1]. F=1 implica estados idénticos.
+            Fidelity in [0, 1]. F=1 implies identical states.
         """
         return float(np.abs(np.dot(state1.conj(), state2)) ** 2)
 
     @staticmethod
     def trace_distance(rho: np.ndarray, sigma: np.ndarray) -> float:
-        """Calcula la distancia de traza T(rho, sigma) = (1/2) Tr|rho - sigma|.
+        """Calculates the trace distance T(rho, sigma) = (1/2) Tr|rho - sigma|.
 
         Parameters
         ----------
         rho, sigma : np.ndarray
-            Matrices densidad.
+            Density matrices.
 
         Returns
         -------
         float
-            Distancia de traza en [0, 1].
+            Trace distance in [0, 1].
         """
         delta = rho - sigma
         singular_values = svd(delta, compute_uv=False)
@@ -266,39 +266,39 @@ class QuantumMath:
 
     @staticmethod
     def von_neumann_entropy(rho: np.ndarray) -> float:
-        """Calcula la entropía de Von Neumann S(rho) = -Tr(rho log rho).
+        """Calculates the Von Neumann entropy S(rho) = -Tr(rho log rho).
 
         Parameters
         ----------
         rho : np.ndarray
-            Matriz densidad.
+            Density matrix.
 
         Returns
         -------
         float
-            Entropía en bits (log base 2). 0 para estados puros.
+            Entropy in bits (log base 2). 0 for pure states.
         """
         eigenvalues = eigh(rho)[0]
         eigenvalues = eigenvalues[eigenvalues > 1e-14]
         return float(-np.sum(eigenvalues * np.log2(eigenvalues)))
 
     # ------------------------------------------------------------------
-    # Coordenadas de Bloch
+    # Bloch coordinates
     # ------------------------------------------------------------------
     @staticmethod
     def bloch_vector(state: np.ndarray) -> Tuple[float, float, float]:
-        """Calcula el vector de Bloch (x, y, z) para un estado puro de 1 qubit.
+        """Calculates the Bloch vector (x, y, z) for a pure 1-qubit state.
 
         Parameters
         ----------
         state : np.ndarray
-            Vector de estado de un qubit [alpha, beta].
+            State vector of one qubit [alpha, beta].
 
         Returns
         -------
         Tuple[float, float, float]
-            Coordenadas (x, y, z) en la esfera de Bloch. La norma es 1
-            para estados puros.
+            Coordinates (x, y, z) on the Bloch sphere. The norm is 1
+            for pure states.
         """
         alpha, beta = state[0], state[1]
         x = 2 * np.real(alpha.conj() * beta)
@@ -308,17 +308,17 @@ class QuantumMath:
 
     @staticmethod
     def bloch_angles(state: np.ndarray) -> Tuple[float, float]:
-        """Extrae los ángulos esféricos (theta, phi) del vector de Bloch.
+        """Extracts the spherical angles (theta, phi) from the Bloch vector.
 
         Parameters
         ----------
         state : np.ndarray
-            Vector de estado de un qubit.
+            State vector of one qubit.
 
         Returns
         -------
         Tuple[float, float]
-            theta en [0, pi], phi en [0, 2*pi].
+            theta in [0, pi], phi in [0, 2*pi].
         """
         alpha, beta = state[0], state[1]
         theta = 2 * np.arccos(np.clip(np.abs(alpha), 0, 1))
@@ -328,28 +328,28 @@ class QuantumMath:
         return (float(theta), float(phi))
 
     # ------------------------------------------------------------------
-    # QFT analítica
+    # Analytical QFT
     # ------------------------------------------------------------------
     @staticmethod
     def qft_matrix(n: int) -> np.ndarray:
-        """Construye la matriz unitaria de la QFT para n qubits.
+        """Constructs the unitary QFT matrix for n qubits.
 
-        La QFT de n qubits es la transformada de Fourier discreta sobre
-        Z_{2^n}, definida como
+        The QFT for n qubits is the discrete Fourier transform over
+        Z_{2^n}, defined as
 
             QFT|j> = (1/sqrt(N)) sum_{k=0}^{N-1} e^{2*pi*i*j*k/N} |k>
 
-        con N = 2^n.
+        with N = 2^n.
 
         Parameters
         ----------
         n : int
-            Número de qubits.
+            Number of qubits.
 
         Returns
         -------
         np.ndarray
-            Matriz unitaria (2^n × 2^n) de tipo complex128.
+            Unitary matrix (2^n x 2^n) of type complex128.
         """
         N = 2 ** n
         omega = np.exp(2j * np.pi / N)

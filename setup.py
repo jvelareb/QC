@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 setup(
     name="quantum_book",
     version="1.0.0",
-    description="Repositorio de código para el libro de Computación Cuántica",
+    description="Code repository for the Quantum Computing book",
     author="J. Velasco",
     packages=find_packages(where="src"),
     package_dir={"": "src"},

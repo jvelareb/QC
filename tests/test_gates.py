@@ -1,10 +1,10 @@
 """
 test_gates.py
 =============
-Tests de unitariedad y corrección algebraica para todos los módulos
-de puertas cuánticas en src/quantum_gates.py.
+Unit tests for unitarity and algebraic correctness for all quantum gate
+modules in src/quantum_gates.py.
 
-Ejecutar con:
+Run with:
     pytest tests/test_gates.py -v
 """
 
@@ -17,7 +17,7 @@ from src.quantum_gates import Gates
 
 
 # ---------------------------------------------------------------------------
-# Unitariedad
+# Unitarity
 # ---------------------------------------------------------------------------
 FIXED_GATES = [Gates.I, Gates.X, Gates.Y, Gates.Z,
                Gates.H, Gates.S, Gates.T, Gates.Sdg, Gates.Tdg,
@@ -25,20 +25,20 @@ FIXED_GATES = [Gates.I, Gates.X, Gates.Y, Gates.Z,
 
 @pytest.mark.parametrize("gate", FIXED_GATES)
 def test_unitarity_fixed_gates(gate):
-    """Verifica que U†U = I para todas las puertas fijas."""
-    assert Gates.is_unitary(gate), f"La puerta {gate} no es unitaria."
+    """Verifies that U†U = I for all fixed gates."""
+    assert Gates.is_unitary(gate), f"Gate {gate} is not unitary."
 
 
 @pytest.mark.parametrize("theta", [0, np.pi/6, np.pi/4, np.pi/2, np.pi, 2*np.pi])
 def test_unitarity_parametric(theta):
-    """Verifica unitariedad de Rx, Ry, Rz para varios ángulos."""
+    """Verifies unitarity of Rx, Ry, Rz for various angles."""
     for gate_fn in [Gates.Rx, Gates.Ry, Gates.Rz]:
         gate = gate_fn(theta)
-        assert Gates.is_unitary(gate), f"{gate_fn.__name__}({theta}) no es unitaria."
+        assert Gates.is_unitary(gate), f"{gate_fn.__name__}({theta}) is not unitary."
 
 
 # ---------------------------------------------------------------------------
-# Identidades algebraicas clave
+# Key algebraic identities
 # ---------------------------------------------------------------------------
 def test_HH_is_identity():
     assert np.allclose(Gates.H @ Gates.H, Gates.I)
@@ -67,14 +67,14 @@ def test_S_Sdg_is_identity():
 
 
 # ---------------------------------------------------------------------------
-# Rotaciones
+# Rotations
 # ---------------------------------------------------------------------------
 def test_Rx_pi_equals_iX():
-    """Rx(π) = -iX (salvo fase global)."""
+    """Rx(π) = -iX (up to global phase)."""
     Rx_pi = Gates.Rx(np.pi)
     ratio = Rx_pi / (-1j * Gates.X)
     assert np.allclose(np.abs(ratio), np.ones((2, 2))), \
-        "Rx(π) no es proporcional a -iX"
+        "Rx(π) is not proportional to -iX"
 
 def test_Rz_double_angle():
     """Rz(θ1 + θ2) = Rz(θ1) @ Rz(θ2)."""

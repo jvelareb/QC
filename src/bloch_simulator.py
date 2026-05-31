@@ -1,16 +1,16 @@
 """
 bloch_simulator.py
 ==================
-Simulador de esfera de Bloch — NumPy + Plotly.
+Bloch sphere simulator — NumPy + Plotly.
 
-Permite aplicar secuencias de puertas cuánticas sobre un qubit inicial
-y visualizar la trayectoria del vector de Bloch resultante.
+Allows applying sequences of quantum gates to an initial qubit
+and visualizing the resulting Bloch vector trajectory.
 
-Diseñado para su uso desde notebooks Jupyter con ipywidgets.
-Ver: notebooks/ch01_introduccion/02_bloch_interactivo.ipynb
+Designed for use from Jupyter notebooks with ipywidgets.
+See: notebooks/ch01_introduccion/02_bloch_interactivo.ipynb
 
-Autor: J. Velasco
-Versión: 1.1.0
+Author: J. Velasco
+Version: 1.1.0
 """
 
 import numpy as np
@@ -21,17 +21,17 @@ from .quantum_math import QuantumMath
 
 
 # ---------------------------------------------------------------------------
-# Simulador
+# Simulator
 # ---------------------------------------------------------------------------
 class BlochSimulator:
     """
-    Simulador interactivo de un qubit sobre la esfera de Bloch.
+    Interactive single-qubit simulator on the Bloch sphere.
 
-    Mantiene el estado interno del qubit y registra la trayectoria
-    del vector de Bloch tras cada operación, lo que permite animar
-    la evolución.
+    Maintains the internal qubit state and records the trajectory
+    of the Bloch vector after each operation, allowing the
+    evolution to be animated.
 
-    Ejemplo de uso::
+    Usage example::
 
         sim = BlochSimulator()
         sim.apply_gate("H")
@@ -68,62 +68,62 @@ class BlochSimulator:
         Parameters
         ----------
         initial_state : str
-            Nombre del estado inicial. Debe ser una clave de INITIAL_STATES.
+            Name of the initial state. Must be a key of INITIAL_STATES.
         """
         self.set_initial_state(initial_state)
 
     # ------------------------------------------------------------------
-    # Estado y secuencia de operaciones
+    # State and operation sequence
     # ------------------------------------------------------------------
     def set_initial_state(self, name: str):
-        """Reinicia el simulador con un estado inicial de INITIAL_STATES."""
+        """Resets the simulator with an initial state from INITIAL_STATES."""
         if name not in self.INITIAL_STATES:
-            raise ValueError(f"Estado desconocido: {name}. "
-                             f"Opciones: {list(self.INITIAL_STATES.keys())}")
+            raise ValueError(f"Unknown state: {name}. "
+                             f"Options: {list(self.INITIAL_STATES.keys())}")
         self._state = self.INITIAL_STATES[name].copy()
         self._trajectory: List[Tuple[float, float, float]] = []
         self._gate_labels: List[str] = []
         self._record()
 
     def reset(self, initial_state: str = "|0⟩"):
-        """Alias semántico para set_initial_state."""
+        """Semantic alias for set_initial_state."""
         self.set_initial_state(initial_state)
 
     def _record(self):
-        """Guarda la posición actual del vector de Bloch en la trayectoria."""
+        """Saves the current Bloch vector position to the trajectory."""
         self._trajectory.append(QuantumMath.bloch_vector(self._state))
 
     @property
     def state(self) -> np.ndarray:
-        """Vector de estado actual del qubit."""
+        """Current state vector of the qubit."""
         return self._state.copy()
 
     @property
     def bloch_vector(self) -> Tuple[float, float, float]:
-        """Vector de Bloch actual (x, y, z)."""
+        """Current Bloch vector (x, y, z)."""
         return QuantumMath.bloch_vector(self._state)
 
     # ------------------------------------------------------------------
-    # Aplicación de puertas
+    # Gate application
     # ------------------------------------------------------------------
     def apply_gate(self, gate: str, **kwargs):
-        """Aplica una puerta al estado actual y registra la posición.
+        """Applies a gate to the current state and records the position.
 
         Parameters
         ----------
         gate : str
-            Nombre de la puerta. Puertas fijas: "I", "X", "Y", "Z",
-            "H", "S", "T", "Sdg", "Tdg". Puertas paramétricas:
-            "Rx", "Ry", "Rz" (requieren theta=<float>),
-            "P" (requiere phi=<float>).
+            Gate name. Fixed gates: "I", "X", "Y", "Z",
+            "H", "S", "T", "Sdg", "Tdg". Parametric gates:
+            "Rx", "Ry", "Rz" (require theta=<float>),
+            "P" (requires phi=<float>).
         **kwargs
-            Parámetros adicionales para puertas paramétricas:
-            theta (rad) para Rx/Ry/Rz, phi (rad) para P.
+            Additional parameters for parametric gates:
+            theta (rad) for Rx/Ry/Rz, phi (rad) for P.
 
         Raises
         ------
         ValueError
-            Si el nombre de puerta no se reconoce.
+            If the gate name is not recognized.
         """
         if gate in self.GATES:
             U = self.GATES[gate]
@@ -145,9 +145,9 @@ class BlochSimulator:
             U = Gates.P(phi)
             label = f"P({phi:.2f})"
         else:
-            raise ValueError(f"Puerta '{gate}' no reconocida. "
-                             f"Fijas: {list(self.GATES.keys())}. "
-                             f"Paramétricas: Rx, Ry, Rz, P.")
+            raise ValueError(f"Gate '{gate}' not recognized. "
+                             f"Fixed: {list(self.GATES.keys())}. "
+                             f"Parametric: Rx, Ry, Rz, P.")
 
         self._state = U @ self._state
         self._state = QuantumMath.normalize(self._state)
@@ -155,11 +155,11 @@ class BlochSimulator:
         self._record()
 
     def apply_sequence(self, sequence: List[dict]):
-        """Aplica una secuencia de puertas definida como lista de dicts.
+        """Applies a sequence of gates defined as a list of dicts.
 
-        Cada elemento de la lista debe ser {"gate": <nombre>, **kwargs}.
+        Each element of the list must be {"gate": <name>, **kwargs}.
 
-        Ejemplo::
+        Example::
 
             sim.apply_sequence([
                 {"gate": "H"},
@@ -172,33 +172,33 @@ class BlochSimulator:
             self.apply_gate(gate, **step)
 
     # ------------------------------------------------------------------
-    # Visualización Plotly (interactiva)
+    # Plotly visualization (interactive)
     # ------------------------------------------------------------------
     def plot_trajectory(
         self,
-        title: str = "Trayectoria en la esfera de Bloch",
+        title: str = "Trajectory on the Bloch sphere",
         show_sphere: bool = True,
         dark_mode: bool = True,
     ) -> go.Figure:
-        """Genera una figura Plotly 3D con la trayectoria del vector de Bloch.
+        """Generates a Plotly 3D figure with the Bloch vector trajectory.
 
         Parameters
         ----------
         title : str
-            Título de la figura.
+            Figure title.
         show_sphere : bool
-            Si True, dibuja la esfera translúcida.
+            If True, draws the translucent sphere.
         dark_mode : bool
-            Si True, usa fondo oscuro al estilo del libro.
+            If True, uses dark background in the style of the book.
 
         Returns
         -------
         go.Figure
-            Figura Plotly lista para .show() o st.plotly_chart().
+            Plotly figure ready for .show() or st.plotly_chart().
         """
         fig = go.Figure()
 
-        # --- Esfera de Bloch ---
+        # --- Bloch sphere ---
         if show_sphere:
             u = np.linspace(0, 2 * np.pi, 60)
             v = np.linspace(0, np.pi, 40)
@@ -211,10 +211,10 @@ class BlochSimulator:
                 colorscale=[[0, "#58a6ff"], [1, "#58a6ff"]],
                 showscale=False,
                 hoverinfo="skip",
-                name="Esfera",
+                name="Sphere",
             ))
 
-        # --- Ejes principales ---
+        # --- Main axes ---
         axis_color = "#8b949e"
         for axis_end, label in [
             ((1.3, 0, 0), "X"), ((0, 1.3, 0), "Y"), ((0, 0, 1.3), "Z"),
@@ -229,7 +229,7 @@ class BlochSimulator:
                 hoverinfo="skip",
             ))
 
-        # Polos
+        # Poles
         fig.add_trace(go.Scatter3d(
             x=[0, 0], y=[0, 0], z=[1.15, -1.15],
             mode="text",
@@ -239,12 +239,12 @@ class BlochSimulator:
             hoverinfo="skip",
         ))
 
-        # --- Trayectoria ---
+        # --- Trajectory ---
         xs = [p[0] for p in self._trajectory]
         ys = [p[1] for p in self._trajectory]
         zs = [p[2] for p in self._trajectory]
 
-        labels = ["Inicio"] + self._gate_labels
+        labels = ["Start"] + self._gate_labels
 
         fig.add_trace(go.Scatter3d(
             x=xs, y=ys, z=zs,
@@ -262,10 +262,10 @@ class BlochSimulator:
                 "x=%{x:.3f}<br>y=%{y:.3f}<br>z=%{z:.3f}"
                 "<extra></extra>"
             ),
-            name="Trayectoria",
+            name="Trajectory",
         ))
 
-        # --- Vector de estado final ---
+        # --- Final state vector ---
         x_f, y_f, z_f = xs[-1], ys[-1], zs[-1]
         fig.add_trace(go.Cone(
             x=[0], y=[0], z=[0],
@@ -275,7 +275,7 @@ class BlochSimulator:
             sizemode="absolute",
             sizeref=0.25,
             anchor="tail",
-            name="Estado final",
+            name="Final state",
         ))
 
         # --- Layout ---
@@ -304,15 +304,15 @@ class BlochSimulator:
         return fig
 
     # ------------------------------------------------------------------
-    # Información del estado
+    # State information
     # ------------------------------------------------------------------
     def state_info(self) -> dict:
-        """Devuelve un resumen del estado actual del qubit.
+        """Returns a summary of the current qubit state.
 
         Returns
         -------
         dict
-            Claves: alpha, beta, prob_0, prob_1, bloch_vector,
+            Keys: alpha, beta, prob_0, prob_1, bloch_vector,
             theta_deg, phi_deg, purity.
         """
         alpha, beta = self._state[0], self._state[1]

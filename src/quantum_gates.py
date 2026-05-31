@@ -1,36 +1,36 @@
 """
 quantum_gates.py
 ================
-Módulo de puertas cuánticas representadas como matrices NumPy.
+Module of quantum gates represented as NumPy matrices.
 
-Contiene todas las puertas unitarias de uno y dos qubits utilizadas
-a lo largo del libro, junto con métodos auxiliares para componer y
-aplicar puertas sobre estados arbitrarios.
+Contains all one- and two-qubit unitary gates used
+throughout the book, along with helper methods to compose and
+apply gates to arbitrary states.
 
-Autor: J. Velasco
-Versión: 1.0.0
+Author: J. Velasco
+Version: 1.0.0
 """
 
 import numpy as np
 from typing import Union
 
 # ---------------------------------------------------------------------------
-# Tipo básico
+# Basic type
 # ---------------------------------------------------------------------------
-Matrix = np.ndarray   # alias para legibilidad
+Matrix = np.ndarray   # alias for readability
 
 
 # ---------------------------------------------------------------------------
-# Clase principal
+# Main class
 # ---------------------------------------------------------------------------
 class Gates:
     """
-    Colección estática de matrices de puertas cuánticas estándar.
+    Static collection of standard quantum gate matrices.
 
-    Todos los atributos son matrices NumPy de dtype complex128.
-    Las puertas de un qubit son matrices 2×2; las de dos qubits, 4×4.
+    All attributes are NumPy matrices of dtype complex128.
+    Single-qubit gates are 2x2 matrices; two-qubit gates are 4x4.
 
-    Ejemplo de uso::
+    Usage example::
 
         from src.quantum_gates import Gates
 
@@ -39,80 +39,80 @@ class Gates:
     """
 
     # ------------------------------------------------------------------
-    # Puertas de un qubit
+    # Single-qubit gates
     # ------------------------------------------------------------------
     I: Matrix = np.eye(2, dtype=complex)
-    """Identidad 2×2."""
+    """2x2 Identity."""
 
     X: Matrix = np.array([[0, 1],
                            [1, 0]], dtype=complex)
-    """Puerta de Pauli X (NOT cuántico)."""
+    """Pauli X gate (quantum NOT)."""
 
     Y: Matrix = np.array([[0, -1j],
                            [1j,  0]], dtype=complex)
-    """Puerta de Pauli Y."""
+    """Pauli Y gate."""
 
     Z: Matrix = np.array([[1,  0],
                            [0, -1]], dtype=complex)
-    """Puerta de Pauli Z (inversión de fase)."""
+    """Pauli Z gate (phase flip)."""
 
     H: Matrix = (1 / np.sqrt(2)) * np.array([[1,  1],
                                               [1, -1]], dtype=complex)
-    """Puerta de Hadamard."""
+    """Hadamard gate."""
 
     S: Matrix = np.array([[1, 0],
                            [0, 1j]], dtype=complex)
-    """Puerta de fase S (sqrt(Z))."""
+    """S phase gate (sqrt(Z))."""
 
     T: Matrix = np.array([[1, 0],
                            [0, np.exp(1j * np.pi / 4)]], dtype=complex)
-    """Puerta T (pi/8)."""
+    """T gate (pi/8)."""
 
     Sdg: Matrix = np.array([[1,  0],
                              [0, -1j]], dtype=complex)
-    """Puerta S† (adjunta de S)."""
+    """S† gate (adjoint of S)."""
 
     Tdg: Matrix = np.array([[1, 0],
                              [0, np.exp(-1j * np.pi / 4)]], dtype=complex)
-    """Puerta T† (adjunta de T)."""
+    """T† gate (adjoint of T)."""
 
     # ------------------------------------------------------------------
-    # Puertas de dos qubits
+    # Two-qubit gates
     # ------------------------------------------------------------------
     CNOT: Matrix = np.array([[1, 0, 0, 0],
                               [0, 1, 0, 0],
                               [0, 0, 0, 1],
                               [0, 0, 1, 0]], dtype=complex)
-    """CNOT (control-NOT, también CX)."""
+    """CNOT (control-NOT, also CX)."""
 
     CZ: Matrix = np.array([[1, 0, 0,  0],
                             [0, 1, 0,  0],
                             [0, 0, 1,  0],
                             [0, 0, 0, -1]], dtype=complex)
-    """Puerta CZ (fase controlada)."""
+    """CZ gate (controlled phase)."""
 
     SWAP: Matrix = np.array([[1, 0, 0, 0],
                               [0, 0, 1, 0],
                               [0, 1, 0, 0],
                               [0, 0, 0, 1]], dtype=complex)
-    """Puerta SWAP."""
+    """SWAP gate."""
 
     # ------------------------------------------------------------------
-    # Puertas parametrizadas (métodos estáticos)
+    # Parameterized gates (static methods)
     # ------------------------------------------------------------------
     @staticmethod
     def Rx(theta: float) -> Matrix:
-        """Rotación en el eje X de la esfera de Bloch por ángulo theta.
+        """Rotation around the X axis of the Bloch sphere by angle theta.
 
         Parameters
         ----------
         theta : float
-            Ángulo de rotación en radianes.
+            Rotation angle in radians.
 
         Returns
         -------
         Matrix
-            Matriz unitaria 2×2.
+            2x2 unitary matrix.
         """
         c = np.cos(theta / 2)
         s = np.sin(theta / 2)
@@ -121,7 +121,7 @@ class Gates:
 
     @staticmethod
     def Ry(theta: float) -> Matrix:
-        """Rotación en el eje Y por ángulo theta."""
+        """Rotation around the Y axis by angle theta."""
         c = np.cos(theta / 2)
         s = np.sin(theta / 2)
         return np.array([[c, -s],
@@ -129,24 +129,24 @@ class Gates:
 
     @staticmethod
     def Rz(theta: float) -> Matrix:
-        """Rotación en el eje Z por ángulo theta."""
+        """Rotation around the Z axis by angle theta."""
         return np.array([[np.exp(-1j * theta / 2), 0],
                          [0, np.exp(1j * theta / 2)]], dtype=complex)
 
     @staticmethod
     def P(phi: float) -> Matrix:
-        """Puerta de fase P(phi): aplica e^{i*phi} al estado |1>."""
+        """Phase gate P(phi): applies e^{i*phi} to the |1> state."""
         return np.array([[1, 0],
                          [0, np.exp(1j * phi)]], dtype=complex)
 
     @staticmethod
     def CR(k: int) -> Matrix:
-        """Puerta de rotación de fase controlada CR_k, usada en la QFT.
+        """Controlled phase rotation gate CR_k, used in the QFT.
 
         Parameters
         ----------
         k : int
-            Entero positivo; la fase aplicada es 2*pi / 2^k.
+            Positive integer; the applied phase is 2*pi / 2^k.
         """
         phi = 2 * np.pi / (2 ** k)
         return np.array([[1, 0, 0,              0],
@@ -155,25 +155,25 @@ class Gates:
                          [0, 0, 0, np.exp(1j * phi)]], dtype=complex)
 
     # ------------------------------------------------------------------
-    # Métodos auxiliares de composición
+    # Composition helper methods
     # ------------------------------------------------------------------
     @staticmethod
     def tensor(*matrices: Matrix) -> Matrix:
-        """Producto tensorial de una secuencia de matrices (A ⊗ B ⊗ …).
+        """Tensor product of a sequence of matrices (A x B x ...).
 
         Parameters
         ----------
         *matrices : Matrix
-            Matrices 2D a combinar con el producto de Kronecker.
+            2D matrices to combine with the Kronecker product.
 
         Returns
         -------
         Matrix
-            Producto tensorial resultante.
+            Resulting tensor product.
 
-        Ejemplo
+        Example
         -------
-        >>> H_I = Gates.tensor(Gates.H, Gates.I)  # H aplicada al qubit 0
+        >>> H_I = Gates.tensor(Gates.H, Gates.I)  # H applied to qubit 0
         """
         result = matrices[0]
         for m in matrices[1:]:
@@ -182,14 +182,14 @@ class Gates:
 
     @staticmethod
     def is_unitary(U: Matrix, tol: float = 1e-10) -> bool:
-        """Comprueba si la matriz U es unitaria (U†U = I).
+        """Checks whether matrix U is unitary (U†U = I).
 
         Parameters
         ----------
         U : Matrix
-            Matriz cuadrada compleja.
+            Square complex matrix.
         tol : float
-            Tolerancia numérica para la comparación.
+            Numerical tolerance for comparison.
 
         Returns
         -------
@@ -201,18 +201,18 @@ class Gates:
 
     @staticmethod
     def apply(gate: Matrix, state: np.ndarray) -> np.ndarray:
-        """Aplica una puerta a un vector de estado.
+        """Applies a gate to a state vector.
 
         Parameters
         ----------
         gate : Matrix
-            Matriz unitaria de la puerta.
+            Unitary matrix of the gate.
         state : np.ndarray
-            Vector de estado columna (normalizado).
+            Column state vector (normalized).
 
         Returns
         -------
         np.ndarray
-            Nuevo vector de estado.
+            New state vector.
         """
         return gate @ state

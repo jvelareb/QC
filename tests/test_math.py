@@ -1,10 +1,10 @@
 """
 test_math.py
 ============
-Tests de corrección para las utilidades matemáticas cuánticas
-en src/quantum_math.py.
+Correctness tests for quantum math utilities
+in src/quantum_math.py.
 
-Ejecutar con:
+Run with:
     pytest tests/test_math.py -v
 """
 
@@ -17,7 +17,7 @@ from src.quantum_math import QuantumMath
 
 
 # ---------------------------------------------------------------------------
-# Estados básicos
+# Basic states
 # ---------------------------------------------------------------------------
 def test_ket0_normalized():
     assert np.isclose(np.linalg.norm(QuantumMath.ket0()), 1.0)
@@ -41,7 +41,7 @@ def test_ket_plus_minus_orthogonal():
 
 
 # ---------------------------------------------------------------------------
-# Probabilidades
+# Probabilities
 # ---------------------------------------------------------------------------
 def test_probabilities_sum_to_one():
     from src.quantum_gates import Gates
@@ -86,7 +86,7 @@ def test_bloch_norm_pure_state():
 
 
 # ---------------------------------------------------------------------------
-# Fidelidad
+# Fidelity
 # ---------------------------------------------------------------------------
 def test_fidelity_same_state():
     state = QuantumMath.ket_plus()
@@ -124,7 +124,7 @@ def test_qft_matrix_unitarity():
         U = QuantumMath.qft_matrix(n)
         UdU = U.conj().T @ U
         assert np.allclose(UdU, np.eye(2**n), atol=1e-10), \
-            f"QFT({n}) no es unitaria"
+            f"QFT({n}) is not unitary"
 
 def test_qft_matrix_dimension():
     for n in [2, 3, 4]:
